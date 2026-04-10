@@ -211,6 +211,7 @@ export interface ATMLeadRow {
   install_date?: string;
   remove_date?: string;
   status?: string;
+  workflow_state?: string;
   lead_owner?: string;
   is_duplicate?: 0 | 1;
   latitude?: number;

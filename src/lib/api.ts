@@ -160,8 +160,8 @@ const ATM_FIELDS = JSON.stringify([
   "business_phone_number","personal_cell_phone","business_type",
   "contract_length","base_rent","hours","percentage","post_date",
   "approve_date","agreement_sent_date","sign_date","convert_date",
-  "install_date","remove_date","status","lead_owner","is_duplicate",
-  "latitude","longitude","ai_core",
+  "install_date","remove_date","status","workflow_state","lead_owner",
+  "is_duplicate","latitude","longitude","ai_core",
 ]);
 
 export const fetchATMLeads = (p: {
@@ -169,6 +169,11 @@ export const fetchATMLeads = (p: {
   company?: string;
   branch?: string;
   executive_name?: string;
+  state_code?: string;
+  is_duplicate?: 0 | 1;
+  ai_score_min?: number;
+  ai_score_max?: number;
+  date_field?: "post_date" | "approve_date" | "sign_date" | "install_date";
   from_date?: string;
   to_date?: string;
   search?: string;
@@ -176,12 +181,17 @@ export const fetchATMLeads = (p: {
   page_size?: number;
 }) => {
   const filters: unknown[][] = [];
-  if (p.status)         filters.push(["status", "=", p.status]);
+  const df = p.date_field ?? "post_date";
+  if (p.status)         filters.push(["workflow_state", "=", p.status]);
   if (p.company)        filters.push(["company", "=", p.company]);
   if (p.branch)         filters.push(["branch", "=", p.branch]);
-  if (p.executive_name) filters.push(["executive_name", "=", p.executive_name]);
-  if (p.from_date)      filters.push(["post_date", ">=", p.from_date]);
-  if (p.to_date)        filters.push(["post_date", "<=", p.to_date]);
+  if (p.executive_name) filters.push(["executive_name", "like", `%${p.executive_name}%`]);
+  if (p.state_code)     filters.push(["state_code", "=", p.state_code.toUpperCase()]);
+  if (p.is_duplicate != null) filters.push(["is_duplicate", "=", p.is_duplicate]);
+  if (p.ai_score_min != null) filters.push(["ai_core", ">=", p.ai_score_min]);
+  if (p.ai_score_max != null) filters.push(["ai_core", "<=", p.ai_score_max]);
+  if (p.from_date)      filters.push([df, ">=", p.from_date]);
+  if (p.to_date)        filters.push([df, "<=", p.to_date]);
   if (p.search)         filters.push(["business_name", "like", `%${p.search}%`]);
 
   return callFrappe<ATMLeadRow[]>("frappe.client.get_list", {
@@ -546,3 +556,13 @@ export interface StateHistoryRow {
   agent_name?: string;
   days_in_state?: number;
 }
+
+/**
+ * Apply a Frappe workflow action to an ATM Lead.
+ * Calls frappe.model.workflow.apply_workflow with the full doc loaded from DB.
+ */
+export const applyWorkflowAction = (name: string, action: string) =>
+  callFrappe<ATMLeadRow>("frappe.model.workflow.apply_workflow", {
+    doc: JSON.stringify({ doctype: "ATM Leads", name }),
+    action,
+  });
