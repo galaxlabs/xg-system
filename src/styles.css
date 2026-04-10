@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════
+   CCLMS Galaxy Dashboard — Design Tokens
+   ═══════════════════════════════════════════════ */
+
+:root {
+  --radius: 12px;
+
+  /* Light theme */
+  --bg:      220 20% 97%;
+  --surface: 0 0% 100%;
+  --card:    0 0% 100%;
+  --text:    224 40% 12%;
+  --muted:   220 15% 52%;
+  --primary: 243 75% 59%;   /* indigo-500 */
+  --accent:  160 84% 39%;   /* emerald-600 */
+  --border:  220 18% 91%;
+  --sidebar: 241 55% 17%;   /* indigo-950 */
+}
+
+.dark {
+  --bg:      224 40% 8%;
+  --surface: 224 35% 11%;
+  --card:    224 30% 14%;
+  --text:    210 30% 92%;
+  --muted:   220 20% 54%;
+  --primary: 243 72% 63%;
+  --accent:  160 80% 42%;
+  --border:  224 25% 22%;
+  --sidebar: 226 50% 8%;
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  ::-webkit-scrollbar        { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { @apply bg-border rounded-full; }
+}
+
+@layer components {
+  /* Cards */
+  .gc-card {
+    @apply bg-card rounded-panel shadow-card border border-border/60;
+  }
+  .gc-card-header {
+    @apply px-5 pt-5 pb-3 flex items-center justify-between;
+  }
+  .gc-card-title {
+    @apply text-sm font-semibold text-text tracking-tight;
+  }
+
+  /* Stat card */
+  .gc-stat {
+    @apply gc-card p-5 flex flex-col gap-2;
+  }
+  .gc-stat-value {
+    @apply text-3xl font-bold text-text;
+  }
+  .gc-stat-label {
+    @apply text-xs font-medium text-muted uppercase tracking-wider;
+  }
+
+  /* Badge */
+  .gc-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .gc-badge-green  { @apply gc-badge bg-emerald-100 text-emerald-700; }
+  .gc-badge-red    { @apply gc-badge bg-red-100 text-red-700; }
+  .gc-badge-yellow { @apply gc-badge bg-amber-100 text-amber-700; }
+  .gc-badge-blue   { @apply gc-badge bg-indigo-100 text-indigo-700; }
+  .gc-badge-sky    { @apply gc-badge bg-sky-100 text-sky-700; }
+  .gc-badge-gray   { @apply gc-badge bg-gray-100 text-gray-600; }
+
+  /* Button */
+  .gc-btn {
+    @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold
+           transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50;
+  }
+  .gc-btn-primary {
+    @apply gc-btn bg-primary text-white hover:opacity-90 active:scale-95;
+  }
+  .gc-btn-ghost {
+    @apply gc-btn bg-transparent text-muted hover:bg-primary/10 hover:text-primary;
+  }
+  .gc-btn-outline {
+    @apply gc-btn border border-border text-text hover:bg-primary/5 hover:border-primary/50;
+  }
+
+  /* Input / Select */
+  .gc-select {
+    @apply rounded-lg border border-border bg-card px-3 py-2 text-sm text-text
+           focus:outline-none focus:ring-2 focus:ring-primary/40
+           hover:border-primary/50 transition-colors;
+  }
+  .gc-input {
+    @apply gc-select;
+  }
+
+  /* Table */
+  .gc-table {
+    @apply w-full text-sm border-collapse;
+  }
+  .gc-table thead th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide
+           bg-surface border-b border-border sticky top-0 z-10;
+  }
+  .gc-table tbody tr {
+    @apply border-b border-border/60 hover:bg-primary/5 transition-colors;
+  }
+  .gc-table tbody td {
+    @apply px-4 py-3 text-sm;
+  }
+
+  /* Sidebar nav link */
+  .gc-nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
+           transition-all duration-150 cursor-pointer;
+  }
+  .gc-nav-item-active {
+    @apply gc-nav-item bg-white/15 text-white shadow-sm;
+  }
+  .gc-nav-item-inactive {
+    @apply gc-nav-item text-indigo-200 hover:bg-white/10 hover:text-white;
+  }
+
+  /* Progress bar */
+  .gc-progress {
+    @apply h-1.5 rounded-full bg-border overflow-hidden;
+  }
+  .gc-progress-fill {
+    @apply h-full rounded-full transition-all duration-500;
+  }
+}
+
+/* Highcharts overrides */
+.highcharts-background { fill: transparent !important; }
+.highcharts-title      { font-family: 'Inter', sans-serif !important; }
+
+
+:root {
+  --bg: 228 35% 97%;
+  --card: 0 0% 100%;
+  --text: 225 35% 14%;
+  --muted: 223 14% 45%;
+  --primary: 221 83% 53%;
+  --accent: 168 76% 38%;
+  --border: 220 20% 90%;
+  --radius: 16px;
+}
+
+[data-theme="graphite"] {
+  --bg: 220 16% 12%;
+  --card: 218 18% 16%;
+  --text: 220 20% 93%;
+  --muted: 220 12% 68%;
+  --primary: 199 89% 58%;
+  --accent: 160 84% 39%;
+  --border: 218 14% 26%;
+}
+
+[data-theme="sunset"] {
+  --bg: 28 90% 97%;
+  --card: 0 0% 100%;
+  --text: 16 40% 18%;
+  --muted: 20 15% 45%;
+  --primary: 15 92% 55%;
+  --accent: 34 90% 45%;
+  --border: 24 36% 86%;
+}
+
+[data-theme="mint"] {
+  --bg: 158 48% 96%;
+  --card: 0 0% 100%;
+  --text: 164 40% 14%;
+  --muted: 167 12% 42%;
+  --primary: 169 78% 35%;
+  --accent: 201 87% 48%;
+  --border: 164 26% 86%;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply m-0 bg-bg text-text antialiased;
+  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+}
