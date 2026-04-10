@@ -341,6 +341,8 @@ export interface EmployeeRow {
   branch?: string;
   company?: string;
   status?: string;
+  cell_number?: string;
+  user_id?: string;
   salary_mode?: string;
   bank_account?: string;
   [key: string]: unknown;

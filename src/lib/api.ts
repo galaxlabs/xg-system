@@ -61,8 +61,33 @@ export const fetchAgentAttribution = (p: Record<string, unknown> = {}) =>
   callFrappe<AttributionRow[]>(`${SD}.get_agent_attribution`, p);
 
 // ── Direction report ──────────────────────────────────────────────────────
-export const fetchStateByExecutive = (p: Record<string, unknown> = {}) =>
-  callFrappe<StateByExecRow[]>(`${RPT}.state_by_executive.get_state_counts_by_executive`, p);
+// Backend returns a pivot: { categories: string[], series: {name,data[]}[], states: string[] }
+// We normalise it to a flat StateByExecRow[] so the page can iterate safely.
+export const fetchStateByExecutive = async (p: Record<string, unknown> = {}): Promise<StateByExecRow[]> => {
+  // Map from_date/to_date → start_date/end_date for the backend
+  const apiArgs: Record<string, unknown> = { ...p };
+  if (p.from_date) { apiArgs.start_date = p.from_date; delete apiArgs.from_date; }
+  if (p.to_date)   { apiArgs.end_date   = p.to_date;   delete apiArgs.to_date; }
+
+  type PivotResp = { categories?: string[]; series?: { name: string; data: number[] }[]; states?: string[] };
+  const res = await callFrappe<StateByExecRow[] | PivotResp>(
+    `${RPT}.state_by_executive.get_state_counts_by_executive`, apiArgs
+  );
+  if (Array.isArray(res)) return res;
+
+  // Transform pivot → flat rows (one row per executive)
+  const pivot = res as PivotResp;
+  const cats   = pivot.categories ?? [];
+  const series = pivot.series     ?? [];
+  return cats.map((exec, i) => {
+    const row: StateByExecRow = { executive: exec, executive_name: exec };
+    for (const s of series) {
+      const key = s.name.toLowerCase().replace(/\s+/g, "_");
+      (row as Record<string, unknown>)[key] = s.data[i] ?? 0;
+    }
+    return row;
+  });
+};
 
 export const fetchAgentPerformance = (p: Record<string, unknown> = {}) =>
   callFrappe<AgentPerfRow[]>(`${RPT}.agent_performance.get_agent_performance`, p);
@@ -384,6 +409,7 @@ export const fetchEmployees = (p: { company?: string; department?: string; branc
     filters: JSON.stringify(filters),
     fields: JSON.stringify([
       "name","employee_name","department","designation","branch","company","status",
+      "cell_number","user_id",
     ]),
     limit_page_length: 500,
     order_by: "employee_name asc",
@@ -393,4 +419,52 @@ export const fetchEmployees = (p: { company?: string; department?: string; branc
 export const createPayrollEntry = (data: Partial<PayrollEntryRow>) =>
   callFrappe<{ name: string }>("frappe.client.insert", {
     doc: JSON.stringify({ doctype: "Payroll Entry", ...data }),
+  });
+
+// ── Attendance CRUD ───────────────────────────────────────────────────────
+export interface AttendanceRow {
+  name?: string;
+  employee: string;
+  employee_name?: string;
+  attendance_date: string;
+  status: "Present" | "Absent" | "Half Day" | "Work From Home" | "On Leave";
+  company?: string;
+  department?: string;
+  docstatus?: number;
+}
+
+export const fetchAttendance = (p: {
+  from_date: string;
+  to_date: string;
+  employee?: string;
+  company?: string;
+  department?: string;
+}) => {
+  const filters: unknown[][] = [
+    ["attendance_date", "between", [p.from_date, p.to_date]],
+  ];
+  if (p.employee)   filters.push(["employee", "=", p.employee]);
+  if (p.company)    filters.push(["company", "=", p.company]);
+  if (p.department) filters.push(["department", "=", p.department]);
+  return callFrappe<AttendanceRow[]>("frappe.client.get_list", {
+    doctype: "Attendance",
+    filters: JSON.stringify(filters),
+    fields: JSON.stringify([
+      "name","employee","employee_name","attendance_date","status","company","department","docstatus",
+    ]),
+    limit_page_length: 1000,
+    order_by: "attendance_date desc",
+  });
+};
+
+export const createAttendance = (data: Partial<AttendanceRow>) =>
+  callFrappe<{ name: string }>("frappe.client.insert", {
+    doc: JSON.stringify({ doctype: "Attendance", ...data }),
+  });
+
+export const updateAttendance = (name: string, data: Partial<AttendanceRow>) =>
+  callFrappe<{ name: string }>("frappe.client.set_value", {
+    doctype: "Attendance",
+    name,
+    fieldname: JSON.stringify(data),
   });
