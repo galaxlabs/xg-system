@@ -1,6 +1,6 @@
 // XG System Dashboard — Full App
 // @ts-nocheck — route/layout scaffold; individual pages are fully typed
-import { useState } from "react";
+import { useState, Component } from "react";
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -12,6 +12,30 @@ import AttendancePage  from "./pages/AttendancePage";
 import DirectionPage   from "./pages/DirectionPage";
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1 } } });
+
+// ── Error Boundary ────────────────────────────────────────────────────────
+class ErrorBoundary extends Component<{ children: any }, { error: Error | null }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 40, fontFamily: "monospace", background: "#1e1b4b", color: "#e0e7ff", minHeight: "100vh" }}>
+          <h2 style={{ color: "#f87171", marginBottom: 12 }}>Runtime Error</h2>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>{this.state.error.message}</pre>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 11, color: "#a5b4fc", marginTop: 12 }}>{this.state.error.stack}</pre>
+          <button onClick={() => this.setState({ error: null })} style={{ marginTop: 20, padding: "8px 16px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const NAV = [
   { path: "/",           label: "Overview",   exact: true },
@@ -38,6 +62,7 @@ export default function App() {
   };
 
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={qc}>
       <BrowserRouter>
         <div className={darkMode ? "dark" : ""}>
@@ -166,6 +191,7 @@ export default function App() {
         </div>
       </BrowserRouter>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
