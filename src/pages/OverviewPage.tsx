@@ -127,7 +127,7 @@ export default function OverviewPage() {
       {ovLoading ? <LoadingBlock /> : (
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-4">
           {statCards.map((c) => (
-            <StatCard key={c.label} label={c.label} value={c.value} color={c.color} icon={c.icon} />
+            <StatCard key={c.label} label={c.label} value={c.value} color={c.color} />
           ))}
         </div>
       )}
