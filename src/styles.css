@@ -20,6 +20,15 @@
   --accent:  160 84% 39%;   /* emerald-600 */
   --border:  220 18% 91%;
   --sidebar: 241 55% 17%;   /* indigo-950 */
+
+  /* gc- aliases used in App.tsx inline styles */
+  --gc-bg:      hsl(220, 20%, 97%);
+  --gc-surface: hsl(0, 0%, 100%);
+  --gc-card:    hsl(0, 0%, 100%);
+  --gc-text:    hsl(224, 40%, 12%);
+  --gc-muted:   hsl(220, 15%, 52%);
+  --gc-border:  hsl(220, 18%, 91%);
+  --gc-sidebar: hsl(241, 55%, 17%);
 }
 
 .dark {
@@ -32,6 +41,15 @@
   --accent:  160 80% 42%;
   --border:  224 25% 22%;
   --sidebar: 226 50% 8%;
+
+  /* gc- aliases — dark */
+  --gc-bg:      hsl(224, 40%, 8%);
+  --gc-surface: hsl(224, 35%, 11%);
+  --gc-card:    hsl(224, 30%, 14%);
+  --gc-text:    hsl(210, 30%, 92%);
+  --gc-muted:   hsl(220, 20%, 54%);
+  --gc-border:  hsl(224, 25%, 22%);
+  --gc-sidebar: hsl(226, 50%, 8%);
 }
 
 @layer base {
