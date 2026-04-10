@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://crm.galaxylabs.online/api/:path*"
+    },
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
