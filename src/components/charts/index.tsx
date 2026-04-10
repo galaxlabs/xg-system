@@ -1,6 +1,9 @@
-import HighchartsReact from "highcharts-react-official";
+import HighchartsReactLib from "highcharts-react-official";
 import Highcharts from "highcharts";
 import type { Options } from "highcharts";
+
+// Handle CJS/ESM interop — the package may export { default: fn } or fn directly
+const HighchartsReact = (HighchartsReactLib as any).default ?? HighchartsReactLib;
 
 // ── Galaxy color palette for Highcharts ───────────────────────────────────
 export const GALAXY_COLORS = [
