@@ -468,3 +468,81 @@ export const updateAttendance = (name: string, data: Partial<AttendanceRow>) =>
     name,
     fieldname: JSON.stringify(data),
   });
+
+// ── ATM Leads business logic helpers ─────────────────────────────────────
+
+export interface DedupConflict {
+  type: "permanent" | "windowed";
+  lead: string;
+  state: string;
+  company: string;
+  age_days: number | null;
+  remaining_days: number | null;
+  window: number;
+}
+
+/** Pre-save location dedup check — mirrors atm_leads.py check_location_conflict */
+export const checkLocationConflict = (p: {
+  full_address?: string;
+  address?: string;
+  zip_code?: string;
+  latitude?: string | number;
+  longitude?: string | number;
+  company?: string;
+  lead_name?: string;
+}) =>
+  callFrappe<DedupConflict | null>(
+    "cclms.call_centre_lead_management_system.doctype.atm_leads.atm_leads.check_location_conflict",
+    p as Record<string, unknown>
+  );
+
+export interface CompanyAvailability {
+  name: string;
+  operator_name: string;
+  status: "source" | "committed" | "locked" | "available";
+  lead: string | null;
+  lead_state: string | null;
+  age_days: number | null;
+  remaining_days: number | null;
+}
+
+/** Load per-company availability for "Duplicate for Companies" */
+export const getCompanyAvailability = (p: {
+  lead_name: string;
+  full_address?: string;
+  address?: string;
+  zip_code?: string;
+  latitude?: string | number;
+  longitude?: string | number;
+  source_company?: string;
+}) =>
+  callFrappe<CompanyAvailability[]>(
+    "cclms.call_centre_lead_management_system.doctype.atm_leads.atm_leads.get_company_availability_for_location",
+    p as Record<string, unknown>
+  );
+
+/** Fetch all Operator Companies for dropdowns */
+export const fetchOperatorCompanies = () =>
+  callFrappe<{ name: string; operator_name: string }[]>("frappe.client.get_list", {
+    doctype: "Operator Companies",
+    fields: JSON.stringify(["name", "operator_name"]),
+    limit_page_length: 200,
+    order_by: "operator_name asc",
+  });
+
+/** Fetch ATM Lead with state_history child table */
+export const fetchATMLeadFull = (name: string) =>
+  callFrappe<ATMLeadRow & { state_history?: StateHistoryRow[] }>("frappe.client.get", {
+    doctype: "ATM Leads",
+    name,
+  });
+
+export interface StateHistoryRow {
+  from_state: string;
+  to_state: string;
+  change_date: string;
+  change_datetime?: string;
+  changed_by?: string;
+  agent_name?: string;
+  days_in_state?: number;
+}
