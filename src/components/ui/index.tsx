@@ -41,34 +41,33 @@ interface StatCardProps {
   icon?: ReactNode;
   trend?: { value: number; up: boolean };
 }
-export function StatCard({ label, value, sub, color = "#6366f1", icon, trend }: StatCardProps) {
+export function StatCard({ label, value, sub, color = "#6366f1", trend }: StatCardProps) {
   return (
-    <div className="gc-stat group hover:shadow-soft transition-all duration-200">
-      <div className="flex items-start justify-between">
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-white text-lg shadow-sm"
-          style={{ background: color }}
-        >
-        {icon ?? null}
-        </div>
+    <div
+      className="gc-stat group hover:shadow-soft transition-all duration-200"
+      style={{ borderLeft: `3px solid ${color}` }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="gc-stat-label">{label}</div>
         {trend && (
           <span
             className={clsx(
               "text-xs font-semibold rounded-full px-2 py-0.5",
-              trend.up ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+              trend.up
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-red-100 text-red-700"
             )}
           >
-            {trend.up ? "+" : "-"} {Math.abs(trend.value)}%
+            {trend.up ? "+" : "−"}{Math.abs(trend.value)}%
           </span>
         )}
       </div>
-      <div className="mt-3">
-        <div className="gc-stat-value" style={{ color }}>
-          {value}
+      <div className="gc-stat-value">{value}</div>
+      {sub && (
+        <div className="text-xs mt-1" style={{ color: "hsl(var(--muted))" }}>
+          {sub}
         </div>
-        <div className="gc-stat-label mt-1">{label}</div>
-        {sub && <div className="text-xs text-muted mt-0.5">{sub}</div>}
-      </div>
+      )}
     </div>
   );
 }
