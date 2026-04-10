@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import clsx from "clsx";
 
 // ── Card ──────────────────────────────────────────────────────────────────
@@ -319,4 +319,270 @@ export function FilterRow({ children, onRefresh }: { children: ReactNode; onRefr
       )}
     </div>
   );
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  size = "md",
+  footer,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  size?: "sm" | "md" | "lg" | "xl";
+  footer?: ReactNode;
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const widths = { sm: "max-w-sm", md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-4xl" };
+
+  return (
+    <div
+      ref={overlayRef}
+      className="gc-modal-overlay"
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+    >
+      <div className={`gc-modal-panel ${widths[size]}`}>
+        {/* Header */}
+        <div className="gc-modal-header">
+          <h3 className="text-sm font-semibold text-text">{title}</h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-[hsl(var(--border))] transition-colors"
+          >
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {/* Body */}
+        <div className="gc-modal-body">{children}</div>
+        {/* Footer */}
+        {footer && <div className="gc-modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Form Field ────────────────────────────────────────────────────────────
+export function FormField({
+  label,
+  required,
+  children,
+  hint,
+}: {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-semibold text-muted uppercase tracking-wide">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      {children}
+      {hint && <span className="text-xs text-muted">{hint}</span>}
+    </div>
+  );
+}
+
+// ── FormGrid ──────────────────────────────────────────────────────────────
+export function FormGrid({ cols = 2, children }: { cols?: 1 | 2 | 3; children: ReactNode }) {
+  const gridCls = { 1: "grid-cols-1", 2: "grid-cols-1 sm:grid-cols-2", 3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" }[cols];
+  return <div className={`grid ${gridCls} gap-4`}>{children}</div>;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+export function Tabs({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: { key: string; label: string; count?: number }[];
+  active: string;
+  onChange: (key: string) => void;
+}) {
+  return (
+    <div className="gc-tabs">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          onClick={() => onChange(t.key)}
+          className={`gc-tab ${active === t.key ? "active" : ""}`}
+        >
+          {t.label}
+          {t.count !== undefined && (
+            <span className={`gc-tab-count ${active === t.key ? "active" : ""}`}>
+              {t.count}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── KPI Card (colored gradient variant) ──────────────────────────────────
+export function KpiCard({
+  label,
+  value,
+  sub,
+  icon,
+  gradient,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon?: ReactNode;
+  gradient?: string;
+}) {
+  return (
+    <div
+      className="gc-kpi-card"
+      style={gradient ? { background: gradient } : undefined}
+    >
+      {icon && <div className="gc-kpi-icon">{icon}</div>}
+      <div className="gc-kpi-value">{value}</div>
+      <div className="gc-kpi-label">{label}</div>
+      {sub && <div className="gc-kpi-sub">{sub}</div>}
+    </div>
+  );
+}
+
+// ── Status Pill ───────────────────────────────────────────────────────────
+const STATUS_COLORS: Record<string, string> = {
+  // Lead statuses
+  Fresh:              "gc-badge-gray",
+  Qualifying:         "gc-badge-sky",
+  Prospecting:        "gc-badge-blue",
+  Agreed:             "gc-badge-purple",
+  Approved:           "gc-badge-sky",
+  "Agreement Sent":   "gc-badge-blue",
+  Signed:             "gc-badge-green",
+  Converted:          "gc-badge-green",
+  Installed:          "gc-badge-green",
+  Rejected:           "gc-badge-red",
+  // Project / Task statuses
+  Open:               "gc-badge-blue",
+  Working:            "gc-badge-yellow",
+  "Pending Review":   "gc-badge-sky",
+  Template:           "gc-badge-gray",
+  Completed:          "gc-badge-green",
+  Overdue:            "gc-badge-red",
+  Cancelled:          "gc-badge-gray",
+  // Payroll
+  Draft:              "gc-badge-gray",
+  Submitted:          "gc-badge-green",
+};
+
+export function StatusPill({ status }: { status?: string }) {
+  if (!status) return <span className="gc-badge-gray">—</span>;
+  const cls = STATUS_COLORS[status] ?? "gc-badge-gray";
+  return <span className={cls}>{status}</span>;
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  onChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onChange: (page: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between pt-3 border-t border-border text-xs">
+      <span className="text-muted">
+        {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          className="gc-btn-ghost py-1 px-2 text-xs disabled:opacity-30"
+        >
+          ← Prev
+        </button>
+        <span className="px-2 font-medium">{page}/{totalPages}</span>
+        <button
+          disabled={page >= totalPages}
+          onClick={() => onChange(page + 1)}
+          className="gc-btn-ghost py-1 px-2 text-xs disabled:opacity-30"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Confirm Dialog ────────────────────────────────────────────────────────
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel = "Delete",
+  danger = true,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <Modal open={open} onClose={onCancel} title={title} size="sm"
+      footer={
+        <div className="flex justify-end gap-2">
+          <button className="gc-btn-outline" onClick={onCancel}>Cancel</button>
+          <button
+            className={danger ? "gc-btn-danger" : "gc-btn-primary"}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      }
+    >
+      <p className="text-sm text-muted">{message}</p>
+    </Modal>
+  );
+}
+
+// ── Toast Notification (lightweight) ─────────────────────────────────────
+export function useToast() {
+  // Simple implementation using alert for now — replace with a toast lib if desired
+  return {
+    success: (msg: string) => { console.log("[success]", msg); },
+    error: (msg: string)   => { console.error("[error]", msg); },
+  };
 }

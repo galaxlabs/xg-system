@@ -181,3 +181,167 @@ export interface GlobalFilters {
   branch?: string;
   agent?: string;
 }
+
+// ── ATM Leads ─────────────────────────────────────────────────────────────
+export interface ATMLeadRow {
+  name: string;
+  business_name?: string;
+  owner_name?: string;
+  company?: string;
+  executive_name?: string;
+  branch?: string;
+  state_code?: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  zip_code?: string;
+  email?: string;
+  business_phone_number?: string;
+  personal_cell_phone?: string;
+  business_type?: string;
+  contract_length?: string;
+  base_rent?: string;
+  hours?: string;
+  percentage?: string;
+  post_date?: string;
+  approve_date?: string;
+  agreement_sent_date?: string;
+  sign_date?: string;
+  convert_date?: string;
+  install_date?: string;
+  remove_date?: string;
+  status?: string;
+  lead_owner?: string;
+  is_duplicate?: 0 | 1;
+  latitude?: number;
+  longitude?: number;
+  ai_core?: number;
+  [key: string]: unknown;
+}
+
+// ── Projects ──────────────────────────────────────────────────────────────
+export interface ProjectRow {
+  name: string;
+  project_name: string;
+  status?: string;
+  priority?: string;
+  percent_complete?: number;
+  expected_start_date?: string;
+  expected_end_date?: string;
+  actual_start_date?: string;
+  actual_end_date?: string;
+  company?: string;
+  department?: string;
+  customer?: string;
+  estimated_costing?: number;
+  total_costing_amount?: number;
+  gross_margin?: number;
+  per_gross_margin?: number;
+  is_active?: string;
+  notes?: string;
+  [key: string]: unknown;
+}
+
+export interface TaskRow {
+  name: string;
+  subject: string;
+  project?: string;
+  status?: string;
+  priority?: string;
+  progress?: number;
+  exp_start_date?: string;
+  exp_end_date?: string;
+  act_start_date?: string;
+  act_end_date?: string;
+  is_milestone?: 0 | 1;
+  is_group?: 0 | 1;
+  color?: string;
+  description?: string;
+  expected_time?: number;
+  actual_time?: number;
+  [key: string]: unknown;
+}
+
+// ── GL / Financials ───────────────────────────────────────────────────────
+export interface GLEntryRow {
+  name: string;
+  account?: string;
+  account_type?: string;
+  posting_date?: string;
+  debit?: number;
+  credit?: number;
+  debit_in_account_currency?: number;
+  credit_in_account_currency?: number;
+  voucher_type?: string;
+  voucher_no?: string;
+  party_type?: string;
+  party?: string;
+  cost_center?: string;
+  project?: string;
+  remarks?: string;
+  company?: string;
+  [key: string]: unknown;
+}
+
+export interface AccountRow {
+  name: string;
+  account_name?: string;
+  account_type?: string;
+  root_type?: string;
+  parent_account?: string;
+  company?: string;
+  balance?: number;
+  [key: string]: unknown;
+}
+
+// ── Payroll ───────────────────────────────────────────────────────────────
+export interface SalarySlipRow {
+  name: string;
+  employee?: string;
+  employee_name?: string;
+  department?: string;
+  designation?: string;
+  branch?: string;
+  start_date?: string;
+  end_date?: string;
+  posting_date?: string;
+  status?: string;
+  salary_structure?: string;
+  payroll_entry?: string;
+  gross_pay?: number;
+  total_deduction?: number;
+  net_pay?: number;
+  payment_days?: number;
+  total_working_days?: number;
+  company?: string;
+  [key: string]: unknown;
+}
+
+export interface PayrollEntryRow {
+  name: string;
+  company?: string;
+  branch?: string;
+  department?: string;
+  payroll_frequency?: string;
+  start_date?: string;
+  end_date?: string;
+  posting_date?: string;
+  status?: string;
+  payment_date?: string;
+  salary_slip_based_on_timesheet?: 0 | 1;
+  total_salary_amount?: number;
+  [key: string]: unknown;
+}
+
+export interface EmployeeRow {
+  name: string;
+  employee_name?: string;
+  department?: string;
+  designation?: string;
+  branch?: string;
+  company?: string;
+  status?: string;
+  salary_mode?: string;
+  bank_account?: string;
+  [key: string]: unknown;
+}

@@ -10,6 +10,10 @@ import AgentsPage      from "./pages/AgentsPage";
 import PipelinePage    from "./pages/PipelinePage";
 import AttendancePage  from "./pages/AttendancePage";
 import DirectionPage   from "./pages/DirectionPage";
+import LeadsPage       from "./pages/LeadsPage";
+import ProjectsPage    from "./pages/ProjectsPage";
+import FinancialsPage  from "./pages/FinancialsPage";
+import PayrollPage     from "./pages/PayrollPage";
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1 } } });
 
@@ -43,6 +47,10 @@ const NAV = [
     d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
   },
   {
+    path: "/leads", label: "ATM Leads",
+    d: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
+  },
+  {
     path: "/signs", label: "Signs",
     d: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
   },
@@ -62,6 +70,18 @@ const NAV = [
     path: "/direction", label: "Direction",
     d: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
   },
+  {
+    path: "/projects", label: "Projects",
+    d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
+  },
+  {
+    path: "/financials", label: "Financials",
+    d: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  },
+  {
+    path: "/payroll", label: "Payroll",
+    d: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
+  },
 ];
 
 const BACKEND = import.meta.env.VITE_FRAPPE_BASE_URL ?? "https://crm.galaxylabs.online";
@@ -71,12 +91,16 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
 
   const PAGE_TITLES: Record<string, string> = {
-    "/":           "Overview",
-    "/signs":      "Signs & Attribution",
-    "/pipeline":   "Pipeline",
-    "/agents":     "Agents",
-    "/attendance": "Attendance",
-    "/direction":  "Direction",
+    "/":            "Overview",
+    "/leads":       "ATM Leads",
+    "/signs":       "Signs & Attribution",
+    "/pipeline":    "Pipeline",
+    "/agents":      "Agents",
+    "/attendance":  "Attendance",
+    "/direction":   "Direction",
+    "/projects":    "Projects",
+    "/financials":  "Financials · GL",
+    "/payroll":     "Payroll",
   };
 
   return (
@@ -206,13 +230,17 @@ export default function App() {
               {/* Page content */}
               <main className="flex-1 p-4 md:p-6 overflow-auto">
                 <Routes>
-                  <Route path="/"           element={<OverviewPage />} />
-                  <Route path="/signs"      element={<SignsPage />} />
-                  <Route path="/pipeline"   element={<PipelinePage />} />
-                  <Route path="/agents"     element={<AgentsPage />} />
-                  <Route path="/attendance" element={<AttendancePage />} />
-                  <Route path="/direction"  element={<DirectionPage />} />
-                  <Route path="*"           element={<Navigate to="/" replace />} />
+                  <Route path="/"             element={<OverviewPage />} />
+                  <Route path="/leads"        element={<LeadsPage />} />
+                  <Route path="/signs"        element={<SignsPage />} />
+                  <Route path="/pipeline"     element={<PipelinePage />} />
+                  <Route path="/agents"       element={<AgentsPage />} />
+                  <Route path="/attendance"   element={<AttendancePage />} />
+                  <Route path="/direction"    element={<DirectionPage />} />
+                  <Route path="/projects"     element={<ProjectsPage />} />
+                  <Route path="/financials"   element={<FinancialsPage />} />
+                  <Route path="/payroll"      element={<PayrollPage />} />
+                  <Route path="*"             element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
             </div>
