@@ -1,3 +1,15 @@
+export function resolveFrappeBaseUrl(): string {
+  const envBase = import.meta.env.VITE_FRAPPE_BASE_URL as string | undefined;
+  const trimmed = envBase?.trim();
+  if (trimmed) return trimmed.replace(/\/+$/, "");
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  return "";
+}
+
 export async function callFrappe<T = unknown>(
   method: string,
   args?: Record<string, unknown>
@@ -9,7 +21,10 @@ export async function callFrappe<T = unknown>(
     return match ? decodeURIComponent(match.slice(key.length)) : "";
   };
 
-  const url = `/api/method/${method}`;
+  const baseUrl = resolveFrappeBaseUrl();
+  const url = baseUrl
+    ? new URL(`/api/method/${method}`, baseUrl).toString()
+    : `/api/method/${method}`;
 
   const body = new URLSearchParams();
   if (args) {
@@ -18,8 +33,8 @@ export async function callFrappe<T = unknown>(
     }
   }
 
-  // API token auth for dev (set VITE_API_KEY and VITE_API_SECRET in .env.local)
-  const apiKey    = import.meta.env.VITE_API_KEY    as string | undefined;
+  // API token auth remains available for cross-site testing or local dev.
+  const apiKey = import.meta.env.VITE_API_KEY as string | undefined;
   const apiSecret = import.meta.env.VITE_API_SECRET as string | undefined;
   const authHeader: Record<string, string> = apiKey && apiSecret
     ? { Authorization: `token ${apiKey}:${apiSecret}` }
