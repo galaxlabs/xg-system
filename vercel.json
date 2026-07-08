@@ -1,12 +1,8 @@
 {
-  "framework": null,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
   "functions": {
     "api/proxy.js": {
       "runtime": "@vercel/node@3",
-      "maxDuration": 10
+      "maxDuration": 30
     }
   },
   "rewrites": [
