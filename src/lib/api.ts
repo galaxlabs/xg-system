@@ -619,3 +619,57 @@ export const applyWorkflowAction = (name: string, action: string) =>
     doc: JSON.stringify({ doctype: "ATM Leads", name }),
     action,
   });
+
+// ── Activity Analysis ──────────────────────────────────────────────────────
+const AR = "cclms.api.activity_report";
+
+export interface ActivityLog {
+  name: string;
+  employee: string;
+  employee_name: string;
+  date: string;
+  total_active_minutes: number;
+  total_idle_minutes: number;
+  unauthorized_site_hits: number;
+  total_calls_today: number;
+  total_talk_time: number;
+  productivity_score: number;
+  status: string;
+  department?: string;
+  designation?: string;
+  branch?: string;
+}
+
+export interface ActivityBreakdown {
+  by_event_type: { event_type: string; count: number; total_minutes: number; avg_productivity: number }[];
+  by_app: { active_app: string; count: number; total_minutes: number; avg_productivity: number }[];
+  by_domain: { domain: string; count: number; total_minutes: number; avg_productivity: number; unauthorized_pct: number }[];
+  productivity_summary: { employee: string; days_tracked: number; total_active_minutes: number; total_idle_minutes: number; avg_productivity: number; total_unauthorized: number }[];
+  total_rows: number;
+}
+
+export interface CallAnalysis {
+  calls: {
+    name: string; employee: string; employee_name?: string;
+    call_date: string; start_time: string; end_time: string;
+    status: string; direction: string; duration: number;
+    customer_number: string; sentiment: string;
+  }[];
+  daily_summary: {
+    employee: string; date: string;
+    total_calls: number; answered_calls: number;
+    missed_calls: number; rejected_calls: number;
+    total_talk_time_seconds: number;
+    average_call_seconds: number; longest_call_seconds: number;
+  }[];
+  direction_breakdown: { direction: string; count: number; avg_duration_seconds: number }[];
+}
+
+export const fetchActivityLogsExtended = (p: { start_date: string; end_date: string; employee?: string }) =>
+  callFrappe<ActivityLog[]>(`${AR}.employee_time_breakdown`, p as Record<string, unknown>);
+
+export const fetchActivityEntryBreakdown = (p: { start_date: string; end_date: string; employee?: string }) =>
+  callFrappe<ActivityBreakdown>(`${AR}.activity_entry_breakdown`, p as Record<string, unknown>);
+
+export const fetchCallAnalysis = (p: { start_date: string; end_date: string; employee?: string }) =>
+  callFrappe<CallAnalysis>(`${AR}.call_analysis`, p as Record<string, unknown>);

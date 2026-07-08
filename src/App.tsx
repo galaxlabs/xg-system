@@ -7,6 +7,7 @@ import {
   BadgeDollarSign,
   BarChart3,
   BriefcaseBusiness,
+  Activity,
   CalendarDays,
   CheckCircle2,
   Compass,
@@ -37,6 +38,7 @@ import FinancialsPage from "./pages/FinancialsPage";
 import PayrollPage from "./pages/PayrollPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import EmployeesPage from "./pages/EmployeesPage";
+import ActivityPage from "./pages/ActivityPage";
 
 import { loginFrappe } from "./lib/frappe";
 
@@ -80,6 +82,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/projects", label: "Projects", module: "Projects", description: "Project and task delivery", icon: BriefcaseBusiness, roles: ROLE.projects },
   { path: "/financials", label: "Financials", module: "Accounting", description: "GL, accounts, balances", icon: WalletCards, roles: ROLE.accounts },
   { path: "/employees", label: "Employees", module: "HR", description: "Employee directory and details", icon: Users, roles: ROLE.hr },
+  { path: "/activity", label: "Activity", module: "HR", description: "Call & activity analytics", icon: Activity, roles: ROLE.hr },
   { path: "/attendance", label: "Attendance", module: "HR", description: "Activity and attendance logs", icon: CalendarDays, roles: ROLE.hr },
   { path: "/payroll", label: "Payroll", module: "HR", description: "Salary slips and payroll entries", icon: BadgeDollarSign, roles: ROLE.hr },
 ];
@@ -318,6 +321,7 @@ function DashboardShell() {
               <Route path="/pipeline" element={<RouteGate path="/pipeline" title="Pipeline" roles={ROLE.cclms}><PipelinePage /></RouteGate>} />
               <Route path="/agents" element={<RouteGate path="/agents" title="Agents" roles={ROLE.sales}><AgentsPage /></RouteGate>} />
               <Route path="/employees" element={<RouteGate path="/employees" title="Employees" roles={ROLE.hr}><EmployeesPage /></RouteGate>} />
+              <Route path="/activity" element={<RouteGate path="/activity" title="Activity" roles={ROLE.hr}><ActivityPage /></RouteGate>} />
               <Route path="/attendance" element={<RouteGate path="/attendance" title="Attendance" roles={ROLE.hr}><AttendancePage /></RouteGate>} />
               <Route path="/direction" element={<RouteGate path="/direction" title="Direction" roles={ROLE.sales}><DirectionPage /></RouteGate>} />
               <Route path="/projects" element={<RouteGate path="/projects" title="Projects" roles={ROLE.projects}><ProjectsPage /></RouteGate>} />

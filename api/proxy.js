@@ -29,11 +29,11 @@ export default async function handler(req, res) {
     "content-type": req.headers["content-type"] || "application/x-www-form-urlencoded; charset=UTF-8",
   };
 
-  if (req.headers.cookie) headers.cookie = req.headers.cookie;
-  if (req.headers["x-frappe-csrf-token"]) headers["x-frappe-csrf-token"] = req.headers["x-frappe-csrf-token"];
-
   if (API_KEY && API_SECRET) {
     headers.authorization = `token ${API_KEY}:${API_SECRET}`;
+  } else {
+    if (req.headers.cookie) headers.cookie = req.headers.cookie;
+    if (req.headers["x-frappe-csrf-token"]) headers["x-frappe-csrf-token"] = req.headers["x-frappe-csrf-token"];
   }
 
   try {
