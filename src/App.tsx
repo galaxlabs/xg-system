@@ -37,6 +37,8 @@ import FinancialsPage from "./pages/FinancialsPage";
 import PayrollPage from "./pages/PayrollPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 
+import { loginFrappe } from "./lib/frappe";
+
 import {
   DashboardSessionProvider,
   fetchDashboardSession,
@@ -128,14 +130,53 @@ function LoadingScreen() {
   return <AppShellMessage kind="XG System" title="Preparing your workspace" copy="Checking the Frappe session, loading role access, and warming up the ERP modules." />;
 }
 
-function LoginScreen({ loginUrl }: { loginUrl: string }) {
+function LoginScreen({ onLoggedIn }: { onLoggedIn: () => Promise<unknown> }) {
+  const [usr, setUsr] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await loginFrappe(usr, pwd);
+      await onLoggedIn();
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <AppShellMessage
-      kind="Secure workspace"
-      title="Sign in to XG System"
-      copy="This app uses your Frappe session and role permissions, then keeps the operation inside the XG frontend."
-      action={<a className="gc-btn-primary" href={loginUrl}><LogIn className="h-4 w-4" /> Sign in</a>}
-    />
+    <div className="grid min-h-screen place-items-center bg-[var(--gc-bg)] px-6 text-[var(--gc-text)]">
+      <form onSubmit={submit} className="w-full max-w-md rounded-[8px] border border-[var(--gc-border)] bg-[var(--gc-card)] p-8 shadow-sm">
+        <div className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--gc-border)] bg-[var(--gc-surface)] px-3 py-1 text-xs font-semibold text-[var(--gc-muted)]">
+          <LogIn className="h-3.5 w-3.5" /> Secure workspace
+        </div>
+        <h1 className="mt-5 text-3xl font-semibold tracking-normal">Sign in to XG System</h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--gc-muted)]">Use your Frappe account. After login, the workspace only shows modules allowed by your roles.</p>
+
+        <div className="mt-6 grid gap-4">
+          <label className="grid gap-1.5">
+            <span className="text-xs font-semibold text-[var(--gc-muted)]">Email or username</span>
+            <input className="gc-input h-11" value={usr} onChange={(event) => setUsr(event.target.value)} autoComplete="username" required />
+          </label>
+          <label className="grid gap-1.5">
+            <span className="text-xs font-semibold text-[var(--gc-muted)]">Password</span>
+            <input className="gc-input h-11" value={pwd} onChange={(event) => setPwd(event.target.value)} type="password" autoComplete="current-password" required />
+          </label>
+        </div>
+
+        {error ? <div className="mt-4 rounded-[6px] border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div> : null}
+
+        <button className="mt-6 w-full justify-center gc-btn-primary" disabled={busy || !usr || !pwd} type="submit">
+          <LogIn className="h-4 w-4" /> {busy ? "Signing in..." : "Sign in"}
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -153,7 +194,6 @@ function AccessDenied({ path, title, roles }: { path: string; title: string; rol
         <div className="mt-4 flex flex-wrap gap-2">
           {roles.map((role) => <span key={role} className="rounded-[6px] border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">{role}</span>)}
         </div>
-        <a className="mt-6 inline-flex gc-btn-primary" href={loginUrl}><LogIn className="h-4 w-4" /> Sign in again</a>
         {session && session.user !== "Guest" ? <p className="mt-4 text-xs text-slate-500">Signed in as {session.full_name ?? session.user} · {formatRoles(session.roles)}</p> : null}
       </div>
     </div>
@@ -298,7 +338,9 @@ function AppContent() {
     retry: 1,
     refetchOnWindowFocus: false,
   });
-  const loginUrl = `/login?redirect-to=${encodeURIComponent(currentPath())}`;
+  const refetchSession = async () => {
+    await qc.invalidateQueries({ queryKey: ["dashboard-session"] });
+  };
 
   if (isLoading) return <LoadingScreen />;
   if (error) {
@@ -307,11 +349,11 @@ function AppContent() {
         kind="Connection error"
         title="Could not verify the Frappe session"
         copy="Confirm the site is reachable and this app is served from the Frappe domain or has a valid API token configured for development."
-        action={<a className="gc-btn-primary" href={loginUrl}><LogIn className="h-4 w-4" /> Sign in</a>}
+        action={null}
       />
     );
   }
-  if (isGuestSession(session)) return <LoginScreen loginUrl={loginUrl} />;
+  if (isGuestSession(session)) return <LoginScreen onLoggedIn={refetchSession} />;
 
   return (
     <DashboardSessionProvider session={session}>
