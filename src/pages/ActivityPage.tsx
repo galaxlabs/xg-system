@@ -6,18 +6,16 @@ import {
 } from "../lib/api";
 import {
   Card, CardHeader, DataTable, LoadingBlock, EmptyBlock, StatCard,
-  FilterRow, DateInput, Tabs,
+  FilterRow, DateInput,
 } from "../components/ui/index";
 import { ColumnChart, BarChart, DonutChart } from "../components/charts/index";
-import { Phone, Clock, Monitor, Globe, Activity } from "lucide-react";
-
-const today = () => new Date().toISOString().split("T")[0];
+import { Phone, Clock, Monitor, Globe } from "lucide-react";
 
 export default function ActivityPage() {
   const { from, to } = thisMonthRange();
   const [fromDate, setFrom] = useState(from);
   const [toDate, setTo] = useState(to);
-  const [activeTab, setTab] = useState(0);
+  const [activeTab, setTab] = useState("logs");
 
   const logQuery = useQuery({
     queryKey: ["activity-ext", fromDate, toDate],
@@ -51,9 +49,9 @@ export default function ActivityPage() {
   const logIdleSeries = logTop.map((r) => r.total_idle_minutes ?? 0);
 
   const tabs = [
-    { label: "Activity Logs", count: logs.length },
-    { label: "Time Breakdown", count: breakdown?.total_rows ?? 0 },
-    { label: "Call Analysis", count: totalCalls },
+    { key: "logs", label: "Activity Logs", count: logs.length },
+    { key: "breakdown", label: "Time Breakdown", count: breakdown?.total_rows ?? 0 },
+    { key: "calls", label: "Call Analysis", count: totalCalls },
   ];
 
   return (
@@ -64,15 +62,24 @@ export default function ActivityPage() {
       </FilterRow>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Total Active" value={fmtMins(totalActive)} color="#10b981" icon={<Activity className="h-4 w-4" />} />
+        <StatCard label="Total Active" value={fmtMins(totalActive)} color="#10b981" icon={<ActivityIcon />} />
         <StatCard label="Total Idle" value={fmtMins(totalIdle)} color="#f59e0b" icon={<Clock className="h-4 w-4" />} />
         <StatCard label="Unauthorized" value={totalUnauth} color="#ef4444" icon={<Globe className="h-4 w-4" />} />
         <StatCard label="Calls Dialed" value={totalCalls} color="#6366f1" icon={<Phone className="h-4 w-4" />} />
       </div>
 
-      <Tabs tabs={tabs} active={activeTab} onChange={setTab} />
+      {tabs.length > 0 && (
+        <div className="gc-tabs">
+          {tabs.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)} className={`gc-tab ${activeTab === t.key ? "active" : ""}`}>
+              {t.label}
+              {t.count !== undefined && <span className={`gc-tab-count ${activeTab === t.key ? "active" : ""}`}>{t.count}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {activeTab === 0 && (
+      {activeTab === "logs" && (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -107,23 +114,23 @@ export default function ActivityPage() {
                     { key: "date", label: "Date", width: "90px" },
                     { key: "employee_name", label: "Employee" },
                     { key: "department", label: "Dept" },
-                    { key: "total_active_minutes", label: "Active", align: "right",
-                      render: (r) => <span className="text-emerald-600 font-medium">{fmtMins(r.total_active_minutes ?? 0)}</span> },
-                    { key: "total_idle_minutes", label: "Idle", align: "right",
-                      render: (r) => <span className="text-amber-500">{fmtMins(r.total_idle_minutes ?? 0)}</span> },
-                    { key: "total_calls_today", label: "Calls", align: "right" },
-                    { key: "unauthorized_site_hits", label: "Unauth", align: "right",
-                      render: (r) => (r.unauthorized_site_hits ?? 0) > 0
-                        ? <span className="gc-badge-red">{r.unauthorized_site_hits}</span>
+                    { key: "total_active_minutes", label: "Active", align: "right" as const,
+                      render: (r: Record<string, unknown>) => <span className="text-emerald-600 font-medium">{fmtMins(Number(r.total_active_minutes ?? 0))}</span> },
+                    { key: "total_idle_minutes", label: "Idle", align: "right" as const,
+                      render: (r: Record<string, unknown>) => <span className="text-amber-500">{fmtMins(Number(r.total_idle_minutes ?? 0))}</span> },
+                    { key: "total_calls_today", label: "Calls", align: "right" as const },
+                    { key: "unauthorized_site_hits", label: "Unauth", align: "right" as const,
+                      render: (r: Record<string, unknown>) => (Number(r.unauthorized_site_hits) ?? 0) > 0
+                        ? <span className="gc-badge-red">{String(r.unauthorized_site_hits)}</span>
                         : <span className="text-xs text-muted">0</span> },
-                    { key: "productivity_score", label: "Prod%", align: "right",
-                      render: (r) => {
-                        const s = r.productivity_score ?? 0;
+                    { key: "productivity_score", label: "Prod%", align: "right" as const,
+                      render: (r: Record<string, unknown>) => {
+                        const s = Number(r.productivity_score) ?? 0;
                         return <span className={s >= 70 ? "gc-badge-green" : s >= 40 ? "gc-badge-yellow" : "gc-badge-red"}>{s}%</span>;
                       }},
                     { key: "status", label: "Status" },
                   ]}
-                  rows={logs}
+                  rows={logs as unknown as Record<string, unknown>[]}
                   keyField="name"
                 />
               )}
@@ -132,25 +139,24 @@ export default function ActivityPage() {
         </>
       )}
 
-      {activeTab === 1 && (
+      {activeTab === "breakdown" && (
         <>
           {breakQuery.isLoading ? <LoadingBlock /> : breakdown ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
-                <CardHeader title="Time by Activity Type" subtitle="Where time was spent" icon={<Activity className="h-4 w-4" />} />
+                <CardHeader title="Time by Activity Type" subtitle="Where time was spent" />
                 <div className="px-4 pb-4">
                   {breakdown.by_event_type.length === 0 ? <EmptyBlock /> : (
                     <DonutChart
                       title="Activity Type"
-                      categories={breakdown.by_event_type.map((r) => r.event_type)}
-                      series={breakdown.by_event_type.map((r) => r.total_minutes)}
+                      data={breakdown.by_event_type.map((r) => ({ name: r.event_type, y: r.total_minutes }))}
                       height={280}
                     />
                   )}
                 </div>
               </Card>
               <Card>
-                <CardHeader title="Time by Application" subtitle="Top apps used" icon={<Monitor className="h-4 w-4" />} />
+                <CardHeader title="Time by Application" subtitle="Top apps used" />
                 <div className="px-4 pb-4 max-h-80 overflow-y-auto space-y-2">
                   {breakdown.by_app.length === 0 ? <EmptyBlock /> : breakdown.by_app.map((app) => (
                     <div key={app.active_app} className="flex items-center justify-between rounded-[6px] bg-[var(--gc-surface)] px-3 py-2 text-sm">
@@ -165,22 +171,25 @@ export default function ActivityPage() {
               </Card>
               <div className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
-                  <CardHeader title="Time by Domain" subtitle="Where online time was spent" icon={<Globe className="h-4 w-4" />} />
+                  <CardHeader title="Time by Domain" subtitle="Where online time was spent" />
                   <div className="gc-card-body">
                     {breakdown.by_domain.length === 0 ? <EmptyBlock /> : (
                       <DataTable
                         cols={[
                           { key: "domain", label: "Domain" },
-                          { key: "total_minutes", label: "Time", align: "right",
-                            render: (r) => <span className="font-medium">{fmtMins(r.total_minutes)}</span> },
-                          { key: "avg_productivity", label: "Productivity", align: "right",
-                            render: (r) => <span className={r.avg_productivity >= 70 ? "gc-badge-green" : "gc-badge-yellow"}>{r.avg_productivity}</span> },
-                          { key: "unauthorized_pct", label: "Unauth %", align: "right",
-                            render: (r) => r.unauthorized_pct > 0
-                              ? <span className="gc-badge-red">{r.unauthorized_pct}%</span>
+                          { key: "total_minutes", label: "Time", align: "right" as const,
+                            render: (r: Record<string, unknown>) => <span className="font-medium">{fmtMins(Number(r.total_minutes))}</span> },
+                          { key: "avg_productivity", label: "Productivity", align: "right" as const,
+                            render: (r: Record<string, unknown>) => {
+                              const s = Number(r.avg_productivity);
+                              return <span className={s >= 70 ? "gc-badge-green" : "gc-badge-yellow"}>{s}</span>;
+                            }},
+                          { key: "unauthorized_pct", label: "Unauth %", align: "right" as const,
+                            render: (r: Record<string, unknown>) => Number(r.unauthorized_pct) > 0
+                              ? <span className="gc-badge-red">{String(r.unauthorized_pct)}%</span>
                               : <span className="text-xs text-muted">0%</span> },
                         ]}
-                        rows={breakdown.by_domain}
+                        rows={breakdown.by_domain as unknown as Record<string, unknown>[]}
                         keyField="domain"
                       />
                     )}
@@ -193,18 +202,18 @@ export default function ActivityPage() {
                       <DataTable
                         cols={[
                           { key: "employee", label: "Employee" },
-                          { key: "days_tracked", label: "Days", align: "right" },
-                          { key: "total_active_minutes", label: "Active", align: "right",
-                            render: (r) => <span className="text-emerald-600">{fmtMins(r.total_active_minutes)}</span> },
-                          { key: "total_idle_minutes", label: "Idle", align: "right",
-                            render: (r) => <span className="text-amber-500">{fmtMins(r.total_idle_minutes)}</span> },
-                          { key: "avg_productivity", label: "Prod%", align: "right",
-                            render: (r) => {
-                              const s = r.avg_productivity ?? 0;
+                          { key: "days_tracked", label: "Days", align: "right" as const },
+                          { key: "total_active_minutes", label: "Active", align: "right" as const,
+                            render: (r: Record<string, unknown>) => <span className="text-emerald-600">{fmtMins(Number(r.total_active_minutes))}</span> },
+                          { key: "total_idle_minutes", label: "Idle", align: "right" as const,
+                            render: (r: Record<string, unknown>) => <span className="text-amber-500">{fmtMins(Number(r.total_idle_minutes))}</span> },
+                          { key: "avg_productivity", label: "Prod%", align: "right" as const,
+                            render: (r: Record<string, unknown>) => {
+                              const s = Number(r.avg_productivity) ?? 0;
                               return <span className={s >= 70 ? "gc-badge-green" : s >= 40 ? "gc-badge-yellow" : "gc-badge-red"}>{s}%</span>;
                             }},
                         ]}
-                        rows={breakdown.productivity_summary}
+                        rows={breakdown.productivity_summary as unknown as Record<string, unknown>[]}
                         keyField="employee"
                       />
                     )}
@@ -216,13 +225,13 @@ export default function ActivityPage() {
         </>
       )}
 
-      {activeTab === 2 && (
+      {activeTab === "calls" && (
         <>
           {callQuery.isLoading ? <LoadingBlock /> : calls ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <StatCard label="Outbound Calls" value={outboundCalls} color="#6366f1" icon={<Phone className="h-4 w-4" />} />
-                <StatCard label="Inbound Calls" value={inboundCalls} color="#10b981" icon={<Phone className="h-4 w-4" />} />
+                <StatCard label="Outbound Calls" value={outboundCalls} color="#6366f1" icon={<IconComponent />} />
+                <StatCard label="Inbound Calls" value={inboundCalls} color="#10b981" icon={<IconComponent />} />
               </div>
               <Card>
                 <CardHeader title="Daily Call Summary" subtitle={`${fromDate} to ${toDate}`} action={<span className="gc-badge-indigo">{calls.daily_summary.length} days</span>} />
@@ -232,18 +241,18 @@ export default function ActivityPage() {
                       cols={[
                         { key: "date", label: "Date" },
                         { key: "employee", label: "Employee" },
-                        { key: "total_calls", label: "Total", align: "right" },
-                        { key: "answered_calls", label: "Answered", align: "right" },
-                        { key: "missed_calls", label: "Missed", align: "right",
-                          render: (r) => r.missed_calls > 0 ? <span className="gc-badge-red">{r.missed_calls}</span> : <span className="text-xs text-muted">0</span> },
-                        { key: "rejected_calls", label: "Rejected", align: "right",
-                          render: (r) => r.rejected_calls > 0 ? <span className="gc-badge-yellow">{r.rejected_calls}</span> : <span className="text-xs text-muted">0</span> },
-                        { key: "total_talk_time_seconds", label: "Talk Time", align: "right",
-                          render: (r) => fmtMins(Math.round((r.total_talk_time_seconds ?? 0) / 60)) },
-                        { key: "average_call_seconds", label: "Avg (sec)", align: "right" },
+                        { key: "total_calls", label: "Total", align: "right" as const },
+                        { key: "answered_calls", label: "Answered", align: "right" as const },
+                        { key: "missed_calls", label: "Missed", align: "right" as const,
+                          render: (r: Record<string, unknown>) => Number(r.missed_calls) > 0 ? <span className="gc-badge-red">{String(r.missed_calls)}</span> : <span className="text-xs text-muted">0</span> },
+                        { key: "rejected_calls", label: "Rejected", align: "right" as const,
+                          render: (r: Record<string, unknown>) => Number(r.rejected_calls) > 0 ? <span className="gc-badge-yellow">{String(r.rejected_calls)}</span> : <span className="text-xs text-muted">0</span> },
+                        { key: "total_talk_time_seconds", label: "Talk Time", align: "right" as const,
+                          render: (r: Record<string, unknown>) => fmtMins(Math.round(Number(r.total_talk_time_seconds ?? 0) / 60)) },
+                        { key: "average_call_seconds", label: "Avg (sec)", align: "right" as const },
                       ]}
-                      rows={calls.daily_summary}
-                      keyField={(r) => `${r.employee}-${r.date}`}
+                      rows={calls.daily_summary as unknown as Record<string, unknown>[]}
+                      keyField="date"
                     />
                   )}
                 </div>
@@ -269,5 +278,21 @@ export default function ActivityPage() {
         </>
       )}
     </div>
+  );
+}
+
+function ActivityIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  );
+}
+
+function IconComponent() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+    </svg>
   );
 }
