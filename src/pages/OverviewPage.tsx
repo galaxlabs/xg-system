@@ -200,12 +200,8 @@ export default function OverviewPage() {
         <div className="px-4 pb-4 overflow-auto max-h-72">
           <DataTable
             cols={[
-              { key: "name",           label: "Lead ID",  width: "140px",
-                render: (r) => (
-                  <a href={`${window.location.origin}/app/atm-leads/${r.name}`}
-                     target="_blank" rel="noreferrer"
-                     className="text-primary font-mono text-xs hover:underline">{String(r.name)}</a>
-                ) },
+              { key: "name",           label: "Deal ID",  width: "140px",
+                render: (r) => <span className="text-primary font-mono text-xs">{String(r.name)}</span> },
               { key: "business_name",  label: "Business" },
               { key: "company",        label: "Company" },
               { key: "executive_name", label: "Agent" },

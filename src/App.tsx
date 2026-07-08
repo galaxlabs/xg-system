@@ -356,7 +356,7 @@ function AppContent() {
 
   return (
     <DashboardSessionProvider session={session}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DashboardShell />
       </BrowserRouter>
     </DashboardSessionProvider>

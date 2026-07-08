@@ -150,6 +150,7 @@ export default function AccountsWorkspace() {
       color: s.color,
     })),
     credits: { enabled: false },
+    accessibility: { enabled: false },
   };
 
   return (

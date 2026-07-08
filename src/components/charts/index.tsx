@@ -50,6 +50,7 @@ Highcharts.setOptions({
     shadow: { color: "rgba(0,0,0,0.3)", offsetX: 2, offsetY: 4, opacity: 0.25, width: 12 },
   },
   credits: { enabled: false },
+  accessibility: { enabled: false },
   plotOptions: {
     series: { animation: { duration: 500 } },
   },
