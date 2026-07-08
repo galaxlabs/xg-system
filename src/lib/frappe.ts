@@ -10,6 +10,12 @@ export function resolveFrappeBaseUrl(): string {
   return "";
 }
 
+function getCookie(name: string): string {
+  const key = `${name}=`;
+  const parts = document.cookie.split(";").map((v) => v.trim());
+  const match = parts.find((p) => p.startsWith(key));
+  return match ? decodeURIComponent(match.slice(key.length)) : "";
+}
 
 export async function loginFrappe(usr: string, pwd: string): Promise<void> {
   const baseUrl = resolveFrappeBaseUrl();
@@ -41,13 +47,6 @@ export async function callFrappe<T = unknown>(
   method: string,
   args?: Record<string, unknown>
 ): Promise<T> {
-  const getCookie = (name: string): string => {
-    const key = `${name}=`;
-    const parts = document.cookie.split(";").map((v) => v.trim());
-    const match = parts.find((p) => p.startsWith(key));
-    return match ? decodeURIComponent(match.slice(key.length)) : "";
-  };
-
   const baseUrl = resolveFrappeBaseUrl();
   const url = baseUrl
     ? new URL(`/api/method/${method}`, baseUrl).toString()
@@ -60,23 +59,14 @@ export async function callFrappe<T = unknown>(
     }
   }
 
-  // API token auth remains available for cross-site testing or local dev.
-  const apiKey = import.meta.env.VITE_API_KEY as string | undefined;
-  const apiSecret = import.meta.env.VITE_API_SECRET as string | undefined;
-  const authHeader: Record<string, string> = apiKey && apiSecret
-    ? { Authorization: `token ${apiKey}:${apiSecret}` }
-    : {
-        "X-Frappe-CSRF-Token":
-          (window as { csrf_token?: string }).csrf_token || getCookie("csrftoken") || "Guest",
-      };
-
   const res = await fetch(url, {
     method: "POST",
     credentials: "include",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       Accept: "application/json",
-      ...authHeader,
+      "X-Frappe-CSRF-Token":
+        (window as { csrf_token?: string }).csrf_token || getCookie("csrftoken") || "Guest",
     },
     body: body.toString(),
   });

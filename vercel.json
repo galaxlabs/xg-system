@@ -1,6 +1,12 @@
 {
+  "functions": {
+    "api/method/[...path].js": {
+      "runtime": "@vercel/node@3",
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
-    { "source": "/api/method/:path*", "destination": "/api/method/:path*" },
+    { "source": "/api/method/:path*", "destination": "/api/method/[...path].js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -1,4 +1,6 @@
 const FRAPPE_BASE_URL = (process.env.FRAPPE_BASE_URL || process.env.VITE_FRAPPE_BASE_URL || "https://btm.digihoopoe.com").replace(/\/+$/, "");
+const API_KEY = process.env.API_KEY || process.env.VITE_API_KEY || "";
+const API_SECRET = process.env.API_SECRET || process.env.VITE_API_SECRET || "";
 
 function normalizePath(value) {
   if (Array.isArray(value)) return value.join("/");
@@ -44,6 +46,11 @@ export default async function handler(req, res) {
   if (req.headers.cookie) headers.cookie = req.headers.cookie;
   if (req.headers["x-frappe-csrf-token"]) headers["x-frappe-csrf-token"] = req.headers["x-frappe-csrf-token"];
   if (req.headers.authorization) headers.authorization = req.headers.authorization;
+
+  // Inject server-side API key/secret if no client auth is present
+  if (!headers.cookie && !headers.authorization && API_KEY && API_SECRET) {
+    headers.authorization = `token ${API_KEY}:${API_SECRET}`;
+  }
 
   try {
     const upstream = await fetch(target, {
