@@ -1,83 +1,66 @@
-# Galaxy UI React Dashboard
+# XG System Dashboard
 
-React + Tailwind dashboard frontend for Galaxy UI.
+React + Tailwind dashboard frontend for the XG / cclms Frappe bench.
 
-Includes:
-- Modern drawer sidebar
-- Module-grouped navigation
-- Collapsible module dropdowns (DocTypes, Dashboards, Reports)
-- Live theme/layout design controls
-- Accounts module workspace (CRUD + permissions + charts + print format designer)
+What is included:
+- Session-aware Frappe login handling
+- Role-filtered navigation and workflow actions
+- Module dashboards for leads, pipeline, attendance, projects, finance, and payroll
+- Frappe asset sync for hosting inside the `cclms` bench
 
 ## Run locally
 
 ```bash
-cd apps/galaxy_ui/react_dashboard
+cd /home/fg/gb/apps/xg-system
 npm install
-cp .env.example .env
+cp .env.example .env.local
 npm run dev
 ```
 
 Default URL: `http://localhost:5173`
 
+## Frappe connection
+
+The dashboard prefers the logged-in Frappe session cookie when it runs on the same site as the bench. That is the safest setup for `/home/fg/gb/sites/btm.digihoopoe.com`.
+
+If you need cross-site access for development or testing, fill in the optional token values in `.env.local`:
+
+```bash
+VITE_FRAPPE_BASE_URL=https://btm.digihoopoe.com
+VITE_API_KEY=...
+VITE_API_SECRET=...
+```
+
 ## Build
 
 ```bash
 npm run build
-npm run preview
 ```
 
-## Build + Ship To Frappe Assets (Plug-and-Play)
+## Sync into the bench
 
-No Nginx change is required for this mode.
+This repo includes a helper that copies the Vite build into the Frappe app public folder:
 
 ```bash
-npm run build:frappe
+./scripts/sync-to-frappe-assets.sh
 ```
 
-This copies `dist/` to:
-- `/home/dg/db-b/apps/galaxy_ui/galaxy_ui/public/react_dashboard`
+By default it syncs to:
 
-Open:
-- `/assets/galaxy_ui/react_dashboard/index.html`
+- `/home/fg/gb/apps/cclms/cclms/public/xg-system`
 
-Override target:
+After syncing, the dashboard is available at:
 
-```bash
-TARGET_DIR=/custom/path/react_dashboard npm run build:frappe
-```
+- `/assets/cclms/xg-system/index.html`
 
-## Deploy to Vercel
+## Login and roles
 
-1. Push this folder to your git repository.
-2. In Vercel, import project and set root directory to `apps/galaxy_ui/react_dashboard`.
-3. Build command: `npm run build`
-4. Output directory: `dist`
+The app checks the current Frappe session through `cclms.api.auth.whoami`.
 
-## Connect with Galaxy UI
+If the user is a guest, the dashboard shows a login screen and routes them back to Frappe login. If the user is authenticated, the sidebar and workflow buttons only show modules/actions that match their assigned Frappe roles.
 
-In Frappe `UI App Config`, set `base_urls`:
+## Notes
 
-```json
-{
-  "react_dashboard_url": "https://your-vercel-domain.vercel.app"
-}
-```
-
-Optional feature flag:
-
-```json
-{
-  "react_dashboard": 1
-}
-```
-
-Then open `/app/ui_panel` and click **React Dashboard**.
-
-## Runtime Base URL Priority
-
-The app resolves Frappe base URL in this order:
-1. Query param `?frappe_base=https://your-site`
-2. `VITE_FRAPPE_BASE_URL` from `.env`
-3. `window.location.origin`
-# react_dashboard
+- Session auth is preferred over API secrets when the app is served from the same Frappe site.
+- API key/secret support remains available for local development.
+- The Frappe site already has the `cclms` app installed, which exposes the reporting endpoints used by this dashboard.

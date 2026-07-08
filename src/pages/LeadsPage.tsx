@@ -12,6 +12,7 @@ import {
   Pagination, ConfirmDialog,
 } from "../components/ui/index";
 import type { ATMLeadRow } from "../lib/types";
+import { hasAnyRole, useDashboardSession } from "../lib/session";
 
 // ── Workflow "Track" — all states from Frappe DB ─────────────────────────
 export const WF_STATES = [
@@ -274,10 +275,12 @@ const ACTION_STYLE: Record<ActionType, string> = {
 
 function WorkflowActions({ lead, onDone }: { lead: ATMLeadRow; onDone: () => void }) {
   const qc = useQueryClient();
+  const session = useDashboardSession();
   const [loading, setLoading] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const currentState = getState(lead);
   const transitions = TRANSITIONS[currentState] ?? [];
+  const sessionRoles = session?.roles ?? [];
 
   // De-duplicate actions (same action may appear with different roles)
   const seen = new Set<string>();
@@ -288,8 +291,10 @@ function WorkflowActions({ lead, onDone }: { lead: ATMLeadRow; onDone: () => voi
     return true;
   });
 
-  if (!unique.length) return (
-    <p className="text-xs text-muted italic">No workflow actions available for this state.</p>
+  const allowed = unique.filter((t) => hasAnyRole(sessionRoles, [t.role]));
+
+  if (!allowed.length) return (
+    <p className="text-xs text-muted italic">No workflow actions available for your current role(s).</p>
   );
 
   const apply = async (action: string) => {
@@ -312,7 +317,7 @@ function WorkflowActions({ lead, onDone }: { lead: ATMLeadRow; onDone: () => voi
       <p className="text-xs font-semibold text-muted uppercase tracking-wider">Workflow Actions</p>
       {err && <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{err}</div>}
       <div className="flex flex-wrap gap-2">
-        {unique.map((t) => {
+        {allowed.map((t) => {
           const type = ACTION_TYPE[t.action] ?? "neutral";
           const style = ACTION_STYLE[type];
           const isLoading = loading === t.action;
