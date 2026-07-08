@@ -59,14 +59,22 @@ export async function callFrappe<T = unknown>(
     }
   }
 
+  const apiKey = import.meta.env.VITE_API_KEY as string | undefined;
+  const apiSecret = import.meta.env.VITE_API_SECRET as string | undefined;
+  const useToken = apiKey && apiSecret && resolveFrappeBaseUrl() !== window.location?.origin;
+
   const res = await fetch(url, {
     method: "POST",
     credentials: "include",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       Accept: "application/json",
-      "X-Frappe-CSRF-Token":
-        (window as { csrf_token?: string }).csrf_token || getCookie("csrftoken") || "Guest",
+      ...(useToken
+        ? { Authorization: `token ${apiKey}:${apiSecret}` }
+        : {
+            "X-Frappe-CSRF-Token":
+              (window as { csrf_token?: string }).csrf_token || getCookie("csrftoken") || "Guest",
+          }),
     },
     body: body.toString(),
   });
