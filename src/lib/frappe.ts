@@ -32,7 +32,7 @@ export async function loginFrappe(usr: string, pwd: string): Promise<void> {
   });
 
   const json = (await res.json().catch(() => ({}))) as { message?: string; exc?: string; _server_messages?: string };
-  if (!res.ok || json.exc || json.message === "Logged In" === false) {
+  if (!res.ok || json.exc) {
     throw new Error(json.exc || json._server_messages || "Login failed. Check the username and password.");
   }
 }

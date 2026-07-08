@@ -182,7 +182,6 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => Promise<unknown> }) {
 
 function AccessDenied({ path, title, roles }: { path: string; title: string; roles: string[] }) {
   const session = useDashboardSession();
-  const loginUrl = `/login?redirect-to=${encodeURIComponent(path)}`;
   return (
     <div className="p-6 md:p-8">
       <div className="max-w-2xl rounded-[8px] border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -331,7 +330,7 @@ function DashboardShell() {
 }
 
 function AppContent() {
-  const { data: session, isLoading, error } = useQuery({
+  const { data: session, isLoading, error, refetch } = useQuery({
     queryKey: ["dashboard-session"],
     queryFn: fetchDashboardSession,
     staleTime: 60_000,
@@ -339,7 +338,7 @@ function AppContent() {
     refetchOnWindowFocus: false,
   });
   const refetchSession = async () => {
-    await qc.invalidateQueries({ queryKey: ["dashboard-session"] });
+    await refetch();
   };
 
   if (isLoading) return <LoadingScreen />;
