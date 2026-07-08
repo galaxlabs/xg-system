@@ -1,8 +1,29 @@
-// XG System Dashboard — Full App
-// @ts-nocheck — route/layout scaffold; individual pages are fully typed
+// XG System Dashboard - ERP workspace shell
+// @ts-nocheck - route/layout scaffold; individual pages are typed where needed
 import { useState, Component } from "react";
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import {
+  BadgeDollarSign,
+  BarChart3,
+  BriefcaseBusiness,
+  CalendarDays,
+  CheckCircle2,
+  Compass,
+  Gauge,
+  LogIn,
+  Menu,
+  Moon,
+  PanelLeftClose,
+  Search,
+  ShieldAlert,
+  Sparkles,
+  Sun,
+  TrendingUp,
+  Users,
+  WalletCards,
+  X,
+} from "lucide-react";
 
 import OverviewPage from "./pages/OverviewPage";
 import SignsPage from "./pages/SignsPage";
@@ -14,8 +35,8 @@ import LeadsPage from "./pages/LeadsPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import FinancialsPage from "./pages/FinancialsPage";
 import PayrollPage from "./pages/PayrollPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
-import { resolveFrappeBaseUrl } from "./lib/frappe";
 import {
   DashboardSessionProvider,
   fetchDashboardSession,
@@ -30,94 +51,53 @@ const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, ret
 type NavItem = {
   path: string;
   label: string;
-  d: string;
+  module: string;
+  description: string;
+  icon: any;
   roles?: string[];
 };
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    path: "/",
-    label: "Overview",
-    d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
-  },
-  {
-    path: "/leads",
-    label: "ATM Leads",
-    d: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
-    roles: ["Sales Agent", "Sales User", "Data Executive", "Onboarding Executive", "OC", "Administrator", "System Manager"],
-  },
-  {
-    path: "/signs",
-    label: "Signs",
-    d: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-    roles: ["Sales Agent", "Sales User", "Data Executive", "Administrator", "System Manager"],
-  },
-  {
-    path: "/pipeline",
-    label: "Pipeline",
-    d: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
-    roles: ["Sales Agent", "Sales User", "Data Executive", "Administrator", "System Manager"],
-  },
-  {
-    path: "/agents",
-    label: "Agents",
-    d: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
-    roles: ["Sales Manager", "Sales Agent", "Data Executive", "Administrator", "System Manager"],
-  },
-  {
-    path: "/attendance",
-    label: "Attendance",
-    d: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-    roles: ["HR Manager", "HR User", "Administrator", "System Manager"],
-  },
-  {
-    path: "/direction",
-    label: "Direction",
-    d: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-    roles: ["Sales Manager", "Sales Agent", "Data Executive", "Administrator", "System Manager"],
-  },
-  {
-    path: "/projects",
-    label: "Projects",
-    d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
-    roles: ["Project Manager", "Project User", "Administrator", "System Manager"],
-  },
-  {
-    path: "/financials",
-    label: "Financials",
-    d: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-    roles: ["Accounts Manager", "Accounts User", "Finance Manager", "Administrator", "System Manager"],
-  },
-  {
-    path: "/payroll",
-    label: "Payroll",
-    d: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
-    roles: ["HR Manager", "HR User", "Payroll Manager", "Administrator", "System Manager"],
-  },
-];
-
-const PAGE_TITLES: Record<string, string> = {
-  "/": "Overview",
-  "/leads": "ATM Leads",
-  "/signs": "Signs & Attribution",
-  "/pipeline": "Pipeline",
-  "/agents": "Agents",
-  "/attendance": "Attendance",
-  "/direction": "Direction",
-  "/projects": "Projects",
-  "/financials": "Financials · GL",
-  "/payroll": "Payroll",
+const ROLE = {
+  sales: ["Sales Agent", "Sales User", "Sales Manager", "Data Executive", "Onboarding Executive", "OC", "Administrator", "System Manager"],
+  cclms: ["Sales Agent", "Sales User", "Sales Manager", "Data Executive", "Onboarding Executive", "OC", "Administrator", "System Manager"],
+  projects: ["Project Manager", "Project User", "Administrator", "System Manager"],
+  accounts: ["Accounts Manager", "Accounts User", "Finance Manager", "Administrator", "System Manager"],
+  hr: ["HR Manager", "HR User", "Payroll Manager", "Administrator", "System Manager"],
+  analytics: ["Sales Manager", "Data Executive", "Accounts Manager", "HR Manager", "Administrator", "System Manager"],
 };
 
+const NAV_ITEMS: NavItem[] = [
+  { path: "/", label: "Command Center", module: "ERP", description: "Live executive overview", icon: Gauge },
+  { path: "/analytics", label: "Analytics", module: "ERP", description: "DocType health and recent activity", icon: BarChart3, roles: ROLE.analytics },
+  { path: "/leads", label: "ATM Leads", module: "CCLMS", description: "Lead capture, workflow, dedupe", icon: Users, roles: ROLE.cclms },
+  { path: "/pipeline", label: "Pipeline", module: "CCLMS", description: "Milestones and state velocity", icon: TrendingUp, roles: ROLE.cclms },
+  { path: "/signs", label: "Signs", module: "CCLMS", description: "Attribution and signed deals", icon: CheckCircle2, roles: ROLE.cclms },
+  { path: "/direction", label: "Direction", module: "CRM", description: "State and executive coverage", icon: Compass, roles: ROLE.sales },
+  { path: "/agents", label: "Agents", module: "CRM", description: "Sales agent performance", icon: BadgeDollarSign, roles: ROLE.sales },
+  { path: "/projects", label: "Projects", module: "Projects", description: "Project and task delivery", icon: BriefcaseBusiness, roles: ROLE.projects },
+  { path: "/financials", label: "Financials", module: "Accounting", description: "GL, accounts, balances", icon: WalletCards, roles: ROLE.accounts },
+  { path: "/attendance", label: "Attendance", module: "HR", description: "Activity and attendance logs", icon: CalendarDays, roles: ROLE.hr },
+  { path: "/payroll", label: "Payroll", module: "HR", description: "Salary slips and payroll entries", icon: BadgeDollarSign, roles: ROLE.hr },
+];
 
-function ErrorBoundaryFallback({ onRetry }: { onRetry: () => void }) {
+const PAGE_TITLES = Object.fromEntries(NAV_ITEMS.map((item) => [item.path, item.label]));
+
+function currentPath() {
+  if (typeof window === "undefined") return "/";
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function AppShellMessage({ kind, title, copy, action }: { kind: string; title: string; copy: string; action?: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#050816,_#0f172a)] text-white">
-      <div className="max-w-xl w-full rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 shadow-2xl shadow-black/30">
-        <p className="text-xs uppercase tracking-[0.35em] text-indigo-200">XG System</p>
-        <h1 className="mt-3 text-3xl font-bold">The dashboard hit a runtime error</h1>
-        <p className="mt-3 text-sm text-slate-300">Retry after the page reloads. If the problem repeats, the browser console should show the exact component that failed.</p>
-        <button className="mt-6 gc-btn gc-btn-primary" onClick={onRetry}>Retry</button>
+    <div className="grid min-h-screen place-items-center bg-[var(--gc-bg)] px-6 text-[var(--gc-text)]">
+      <div className="w-full max-w-xl rounded-[8px] border border-[var(--gc-border)] bg-[var(--gc-card)] p-8 shadow-sm">
+        <div className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--gc-border)] bg-[var(--gc-surface)] px-3 py-1 text-xs font-semibold text-[var(--gc-muted)]">
+          <Sparkles className="h-3.5 w-3.5" />
+          {kind}
+        </div>
+        <h1 className="mt-5 text-3xl font-semibold tracking-normal">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--gc-muted)]">{copy}</p>
+        {action ? <div className="mt-6 flex flex-wrap gap-3">{action}</div> : null}
       </div>
     </div>
   );
@@ -131,96 +111,50 @@ class ErrorBoundary extends Component<{ children: any }, { error: Error | null }
   static getDerivedStateFromError(error: Error) { return { error }; }
   render() {
     if (this.state.error) {
-      return <ErrorBoundaryFallback onRetry={() => this.setState({ error: null })} />;
+      return (
+        <AppShellMessage
+          kind="Runtime error"
+          title="The workspace needs a reload"
+          copy="A frontend component stopped rendering. Retry the workspace; if it repeats, the browser console will show the failing component."
+          action={<button className="gc-btn-primary" onClick={() => this.setState({ error: null })}>Retry</button>}
+        />
+      );
     }
     return this.props.children;
   }
 }
 
 function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.2),_transparent_30%),linear-gradient(180deg,_#050816,_#0f172a)] text-white">
-      <div className="max-w-lg w-full rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 shadow-2xl shadow-black/30">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-          Syncing Frappe session
-        </div>
-        <h1 className="mt-4 text-3xl font-bold">Loading XG System</h1>
-        <p className="mt-3 text-sm text-slate-300">We are checking the live Frappe session and preparing the role-aware navigation.</p>
-        <div className="mt-6 h-2 rounded-full bg-white/10 overflow-hidden">
-          <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 animate-pulse" />
-        </div>
-      </div>
-    </div>
-  );
+  return <AppShellMessage kind="XG System" title="Preparing your workspace" copy="Checking the Frappe session, loading role access, and warming up the ERP modules." />;
 }
 
-function LoginScreen({ loginUrl, backendUrl }: { loginUrl: string; backendUrl: string }) {
+function LoginScreen({ loginUrl }: { loginUrl: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.16),_transparent_28%),linear-gradient(180deg,_#04111f,_#071323)] text-white">
-      <div className="max-w-3xl w-full grid gap-6 lg:grid-cols-[1.2fr_0.8fr] rounded-[2rem] border border-white/10 bg-white/6 backdrop-blur-2xl p-6 md:p-8 shadow-2xl shadow-black/30">
-        <div className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.4em] text-sky-200">XG System</p>
-          <h1 className="text-4xl md:text-5xl font-black leading-tight">Sign in with your Frappe account to see the dashboard.</h1>
-          <p className="text-slate-300 max-w-2xl">
-            This build uses the logged-in Frappe session when it is served from the same site.
-            API token support stays available for local development or cross-site testing, but it is not required for normal site use.
-          </p>
-          <div className="flex flex-wrap gap-3 pt-2">
-            <a className="gc-btn gc-btn-primary" href={loginUrl}>Open Frappe Login</a>
-            <a className="gc-btn gc-btn-outline border-white/20 text-white hover:bg-white/10" href={backendUrl} target="_blank" rel="noreferrer">
-              Open Site
-            </a>
-          </div>
-        </div>
-
-        <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Connection</p>
-          <div className="mt-4 space-y-4 text-sm text-slate-300">
-            <div>
-              <div className="text-slate-500 text-xs uppercase tracking-wider">Frappe site</div>
-              <div className="mt-1 font-semibold text-white break-all">{backendUrl}</div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-xs uppercase tracking-wider">Authentication</div>
-              <div className="mt-1">Frappe session cookie or API token fallback</div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-xs uppercase tracking-wider">Role scope</div>
-              <div className="mt-1">Modules appear only when your Frappe roles are allowed to see them.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AppShellMessage
+      kind="Secure workspace"
+      title="Sign in to XG System"
+      copy="This app uses your Frappe session and role permissions, then keeps the operation inside the XG frontend."
+      action={<a className="gc-btn-primary" href={loginUrl}><LogIn className="h-4 w-4" /> Sign in</a>}
+    />
   );
 }
 
 function AccessDenied({ path, title, roles }: { path: string; title: string; roles: string[] }) {
   const session = useDashboardSession();
-  const backendUrl = resolveFrappeBaseUrl();
   const loginUrl = `/login?redirect-to=${encodeURIComponent(path)}`;
   return (
     <div className="p-6 md:p-8">
-      <div className="max-w-2xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <p className="text-xs uppercase tracking-[0.3em] text-amber-700">Access restricted</p>
-        <h2 className="mt-2 text-2xl font-bold text-slate-900">{title}</h2>
-        <p className="mt-3 text-sm text-slate-700">
-          Your current Frappe roles do not include this module. If this looks wrong, check the role assignments on your user record or log in with the right account.
-        </p>
+      <div className="max-w-2xl rounded-[8px] border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-amber-700">
+          <ShieldAlert className="h-4 w-4" /> Access restricted
+        </div>
+        <h2 className="mt-3 text-2xl font-semibold tracking-normal text-slate-900">{title}</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-700">Your current Frappe roles do not include this module. Ask an admin to adjust the role assignment, or sign in with the right account.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {roles.map((role) => (
-            <span key={role} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
-              {role}
-            </span>
-          ))}
+          {roles.map((role) => <span key={role} className="rounded-[6px] border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">{role}</span>)}
         </div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a className="gc-btn gc-btn-primary" href={loginUrl}>Open Login</a>
-          <a className="gc-btn gc-btn-outline" href={backendUrl} target="_blank" rel="noreferrer">Open Site</a>
-        </div>
-        {session && session.user !== "Guest" && (
-          <p className="mt-4 text-xs text-slate-500">Signed in as {session.full_name ?? session.user} · {formatRoles(session.roles)}</p>
-        )}
+        <a className="mt-6 inline-flex gc-btn-primary" href={loginUrl}><LogIn className="h-4 w-4" /> Sign in again</a>
+        {session && session.user !== "Guest" ? <p className="mt-4 text-xs text-slate-500">Signed in as {session.full_name ?? session.user} · {formatRoles(session.roles)}</p> : null}
       </div>
     </div>
   );
@@ -228,159 +162,125 @@ function AccessDenied({ path, title, roles }: { path: string; title: string; rol
 
 function RouteGate({ path, title, roles, children }: { path: string; title: string; roles: string[]; children: any }) {
   const session = useDashboardSession();
-  if (!hasAnyRole(session?.roles, roles)) {
-    return <AccessDenied path={path} title={title} roles={roles} />;
-  }
+  if (!hasAnyRole(session?.roles, roles)) return <AccessDenied path={path} title={title} roles={roles} />;
   return children;
 }
 
 function DashboardShell() {
   const session = useDashboardSession();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [navSearch, setNavSearch] = useState("");
   const location = useLocation();
 
   const roles = session?.roles ?? [];
   const visibleNav = NAV_ITEMS.filter((item) => hasAnyRole(roles, item.roles));
-  const pageTitle = PAGE_TITLES[location.pathname] ?? visibleNav.find((item) => item.path === location.pathname)?.label ?? "XG System";
-  const backendUrl = resolveFrappeBaseUrl();
-  const loginUrl = `/login?redirect-to=${encodeURIComponent(`${location.pathname}${location.search}${location.hash}`)}`;
+  const filteredNav = visibleNav.filter((item) => {
+    const q = navSearch.trim().toLowerCase();
+    if (!q) return true;
+    return `${item.label} ${item.module} ${item.description}`.toLowerCase().includes(q);
+  });
+  const groupedNav = filteredNav.reduce<Record<string, NavItem[]>>((groups, item) => {
+    groups[item.module] = [...(groups[item.module] ?? []), item];
+    return groups;
+  }, {});
+  const activeItem = visibleNav.find((item) => item.path === location.pathname) ?? visibleNav[0];
+  const pageTitle = PAGE_TITLES[location.pathname] ?? activeItem?.label ?? "XG System";
 
   return (
     <div className={darkMode ? "dark" : ""}>
-      <div className="flex min-h-screen bg-[var(--gc-bg)] font-sans transition-colors duration-200">
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+      <div className="min-h-screen bg-[var(--gc-bg)] text-[var(--gc-text)]">
+        {sidebarOpen ? <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
 
-        <aside
-          className={`fixed inset-y-0 left-0 z-30 flex flex-col transition-all duration-300
-            ${sidebarOpen ? "w-60" : "w-0 overflow-hidden"}
-            lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:w-60`}
-          style={{ background: "var(--gc-sidebar)" }}
-        >
-          <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400 flex items-center justify-center text-white font-black text-sm shrink-0">
-              G
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-[10px] text-indigo-300 uppercase tracking-widest leading-none">Galaxy Labs</p>
-              <p className="text-sm font-bold text-white leading-tight mt-0.5">XG System</p>
-            </div>
+        <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[var(--gc-sidebar-border)] bg-[var(--gc-sidebar)] text-white transition-all duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${collapsed ? "lg:w-24" : "lg:w-80"} w-80 lg:translate-x-0`}>
+          <div className="flex items-center gap-3 border-b border-[var(--gc-sidebar-border)] px-5 py-5">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-[var(--gc-sidebar-primary)] text-base font-black text-[var(--gc-sidebar-primary-text)] shadow-sm">XG</div>
+            {!collapsed ? (
+              <div className="min-w-0">
+                <div className="truncate text-base font-semibold">XG System</div>
+                <div className="truncate text-xs text-white/65">ERP · CRM · CCLMS</div>
+              </div>
+            ) : null}
+            <button className="ml-auto hidden rounded-[6px] p-2 text-white/70 hover:bg-white/10 lg:inline-flex" onClick={() => setCollapsed((v) => !v)} title="Toggle sidebar">
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+            <button className="ml-auto rounded-[6px] p-2 text-white/70 hover:bg-white/10 lg:hidden" onClick={() => setSidebarOpen(false)} title="Close navigation">
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-            {visibleNav.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === "/"}
-                className={({ isActive }) => `gc-nav-item ${isActive ? "active" : ""}`}
-                onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
-              >
-                <svg className="w-4 h-4 shrink-0 opacity-70" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d={item.d} />
-                </svg>
-                <span className="text-sm">{item.label}</span>
-              </NavLink>
+          {!collapsed ? (
+            <div className="px-4 py-4">
+              <label className="flex h-10 items-center gap-2 rounded-[8px] border border-white/10 bg-white/7 px-3 text-white/70">
+                <Search className="h-4 w-4" />
+                <input className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/45" value={navSearch} onChange={(e) => setNavSearch(e.target.value)} placeholder="Search modules" />
+              </label>
+            </div>
+          ) : null}
+
+          <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+            {Object.entries(groupedNav).map(([module, items]) => (
+              <div key={module} className="mb-4">
+                {!collapsed ? <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-normal text-white/45">{module}</div> : null}
+                <div className="grid gap-1">
+                  {items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <NavLink key={item.path} to={item.path} end={item.path === "/"} onClick={() => setSidebarOpen(false)} className={({ isActive }) => `xg-nav-link ${isActive ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`} title={collapsed ? item.label : undefined}>
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed ? (
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium">{item.label}</span>
+                            <span className="block truncate text-[11px] text-white/45">{item.description}</span>
+                          </span>
+                        ) : null}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </nav>
 
-          <div className="mx-3 mb-4 p-3 rounded-xl bg-white/5 shrink-0 space-y-2">
-            <div>
-              <p className="text-[10px] text-indigo-300 uppercase tracking-wider">Connected to</p>
-              <p className="text-xs font-semibold text-white mt-0.5 truncate">{backendUrl.replace("https://", "")}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-indigo-300 uppercase tracking-wider">Signed in as</p>
-              <p className="text-xs font-semibold text-white mt-0.5 truncate">{session?.full_name ?? session?.user}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5 truncate">{formatRoles(roles)}</p>
+          <div className="border-t border-[var(--gc-sidebar-border)] p-4">
+            <div className="rounded-[8px] bg-white/7 p-3">
+              <div className="truncate text-sm font-semibold">{session?.full_name ?? session?.user}</div>
+              {!collapsed ? <div className="mt-1 truncate text-xs text-white/60">{formatRoles(roles)}</div> : null}
             </div>
           </div>
         </aside>
 
-        <div className="flex flex-col flex-1 min-w-0">
-          <header
-            className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b shrink-0"
-            style={{ background: "var(--gc-card)", borderColor: "var(--gc-border)" }}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                className="p-2 rounded-lg hover:bg-[var(--gc-surface)] transition-colors lg:hidden"
-                onClick={() => setSidebarOpen((v) => !v)}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <button
-                className="hidden lg:flex p-2 rounded-lg hover:bg-[var(--gc-surface)] transition-colors"
-                onClick={() => setSidebarOpen((v) => !v)}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-
-              <div className="min-w-0">
-                <p className="text-xs uppercase tracking-[0.24em] text-[var(--gc-muted)]">{pageTitle}</p>
-                <p className="text-sm font-semibold" style={{ color: "var(--gc-text)" }}>
-                  {session?.full_name ?? session?.user}
-                  <span className="ml-2 text-[10px] font-medium uppercase tracking-wider text-[var(--gc-muted)]">
-                    {formatRoles(roles)}
-                  </span>
-                </p>
+        <div className={`${collapsed ? "lg:pl-24" : "lg:pl-80"} transition-all duration-200`}>
+          <header className="sticky top-0 z-20 border-b border-[var(--gc-border)] bg-[var(--gc-card)]/95 backdrop-blur">
+            <div className="flex min-h-16 items-center justify-between gap-3 px-4 md:px-8">
+              <div className="flex min-w-0 items-center gap-3">
+                <button className="rounded-[6px] p-2 hover:bg-[var(--gc-surface)] lg:hidden" onClick={() => setSidebarOpen(true)} title="Open navigation"><Menu className="h-5 w-5" /></button>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-semibold uppercase tracking-normal text-[var(--gc-muted)]">Galaxy Labs / {activeItem?.module ?? "ERP"}</div>
+                  <div className="truncate text-lg font-semibold tracking-normal">{pageTitle}</div>
+                </div>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setDarkMode((d) => !d)}
-                className="p-2 rounded-lg hover:bg-[var(--gc-surface)] transition-colors"
-                title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {darkMode ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                )}
-              </button>
-              <a
-                href={backendUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="gc-btn-outline text-xs px-3 py-1.5"
-              >
-                Open Frappe
-              </a>
-              <a
-                href={loginUrl}
-                className="hidden sm:inline-flex gc-btn text-xs px-3 py-1.5 bg-[var(--gc-surface)] text-[var(--gc-text)] border border-[var(--gc-border)]"
-              >
-                Recheck Login
-              </a>
+              <div className="flex items-center gap-2">
+                <div className="hidden rounded-[8px] border border-[var(--gc-border)] bg-[var(--gc-surface)] px-3 py-2 text-xs text-[var(--gc-muted)] md:block">{visibleNav.length} modules enabled</div>
+                <button className="rounded-[6px] border border-[var(--gc-border)] bg-[var(--gc-surface)] p-2" onClick={() => setDarkMode((d) => !d)} title={darkMode ? "Light mode" : "Dark mode"}>{darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
+              </div>
             </div>
           </header>
 
-          <main className="flex-1 p-4 md:p-6 overflow-auto">
+          <main className="min-h-[calc(100vh-4rem)] p-4 md:p-8">
             <Routes>
               <Route path="/" element={<OverviewPage />} />
-              <Route path="/leads" element={<RouteGate path="/leads" title="ATM Leads" roles={["Sales Agent", "Sales User", "Data Executive", "Onboarding Executive", "OC", "Administrator", "System Manager"]}><LeadsPage /></RouteGate>} />
-              <Route path="/signs" element={<RouteGate path="/signs" title="Signs" roles={["Sales Agent", "Sales User", "Data Executive", "Administrator", "System Manager"]}><SignsPage /></RouteGate>} />
-              <Route path="/pipeline" element={<RouteGate path="/pipeline" title="Pipeline" roles={["Sales Agent", "Sales User", "Data Executive", "Administrator", "System Manager"]}><PipelinePage /></RouteGate>} />
-              <Route path="/agents" element={<RouteGate path="/agents" title="Agents" roles={["Sales Manager", "Sales Agent", "Data Executive", "Administrator", "System Manager"]}><AgentsPage /></RouteGate>} />
-              <Route path="/attendance" element={<RouteGate path="/attendance" title="Attendance" roles={["HR Manager", "HR User", "Administrator", "System Manager"]}><AttendancePage /></RouteGate>} />
-              <Route path="/direction" element={<RouteGate path="/direction" title="Direction" roles={["Sales Manager", "Sales Agent", "Data Executive", "Administrator", "System Manager"]}><DirectionPage /></RouteGate>} />
-              <Route path="/projects" element={<RouteGate path="/projects" title="Projects" roles={["Project Manager", "Project User", "Administrator", "System Manager"]}><ProjectsPage /></RouteGate>} />
-              <Route path="/financials" element={<RouteGate path="/financials" title="Financials" roles={["Accounts Manager", "Accounts User", "Finance Manager", "Administrator", "System Manager"]}><FinancialsPage /></RouteGate>} />
-              <Route path="/payroll" element={<RouteGate path="/payroll" title="Payroll" roles={["HR Manager", "HR User", "Payroll Manager", "Administrator", "System Manager"]}><PayrollPage /></RouteGate>} />
+              <Route path="/analytics" element={<RouteGate path="/analytics" title="Analytics" roles={ROLE.analytics}><AnalyticsPage /></RouteGate>} />
+              <Route path="/leads" element={<RouteGate path="/leads" title="ATM Leads" roles={ROLE.cclms}><LeadsPage /></RouteGate>} />
+              <Route path="/signs" element={<RouteGate path="/signs" title="Signs" roles={ROLE.cclms}><SignsPage /></RouteGate>} />
+              <Route path="/pipeline" element={<RouteGate path="/pipeline" title="Pipeline" roles={ROLE.cclms}><PipelinePage /></RouteGate>} />
+              <Route path="/agents" element={<RouteGate path="/agents" title="Agents" roles={ROLE.sales}><AgentsPage /></RouteGate>} />
+              <Route path="/attendance" element={<RouteGate path="/attendance" title="Attendance" roles={ROLE.hr}><AttendancePage /></RouteGate>} />
+              <Route path="/direction" element={<RouteGate path="/direction" title="Direction" roles={ROLE.sales}><DirectionPage /></RouteGate>} />
+              <Route path="/projects" element={<RouteGate path="/projects" title="Projects" roles={ROLE.projects}><ProjectsPage /></RouteGate>} />
+              <Route path="/financials" element={<RouteGate path="/financials" title="Financials" roles={ROLE.accounts}><FinancialsPage /></RouteGate>} />
+              <Route path="/payroll" element={<RouteGate path="/payroll" title="Payroll" roles={ROLE.hr}><PayrollPage /></RouteGate>} />
               <Route path="*" element={<Navigate to={visibleNav[0]?.path ?? "/"} replace />} />
             </Routes>
           </main>
@@ -398,34 +298,20 @@ function AppContent() {
     retry: 1,
     refetchOnWindowFocus: false,
   });
+  const loginUrl = `/login?redirect-to=${encodeURIComponent(currentPath())}`;
 
-  const backendUrl = resolveFrappeBaseUrl();
-  const loginUrl = `/login?redirect-to=${encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`)}`;
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
+  if (isLoading) return <LoadingScreen />;
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#050816,_#0f172a)] text-white">
-        <div className="max-w-xl w-full rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 shadow-2xl shadow-black/30">
-          <p className="text-xs uppercase tracking-[0.35em] text-indigo-200">Connection error</p>
-          <h1 className="mt-3 text-3xl font-bold">Could not reach the Frappe session endpoint</h1>
-          <p className="mt-3 text-sm text-slate-300">The dashboard could not verify the logged-in user. Confirm the site is reachable and that the app is served from the Frappe domain or has the correct API token configured.</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a className="gc-btn gc-btn-primary" href={loginUrl}>Open Login</a>
-            <a className="gc-btn gc-btn-outline border-white/20 text-white hover:bg-white/10" href={backendUrl} target="_blank" rel="noreferrer">Open Site</a>
-          </div>
-          <pre className="mt-6 overflow-auto rounded-2xl bg-black/30 p-4 text-xs text-red-200 whitespace-pre-wrap">{String((error as Error).message ?? error)}</pre>
-        </div>
-      </div>
+      <AppShellMessage
+        kind="Connection error"
+        title="Could not verify the Frappe session"
+        copy="Confirm the site is reachable and this app is served from the Frappe domain or has a valid API token configured for development."
+        action={<a className="gc-btn-primary" href={loginUrl}><LogIn className="h-4 w-4" /> Sign in</a>}
+      />
     );
   }
-
-  if (isGuestSession(session)) {
-    return <LoginScreen loginUrl={loginUrl} backendUrl={backendUrl} />;
-  }
+  if (isGuestSession(session)) return <LoginScreen loginUrl={loginUrl} />;
 
   return (
     <DashboardSessionProvider session={session}>

@@ -3,15 +3,19 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const BACKEND = env.VITE_FRAPPE_BASE_URL || "https://crm.galaxylabs.online";
+  const backend = env.VITE_FRAPPE_BASE_URL || "https://btm.digihoopoe.com";
+  const base = mode === "production" ? "/assets/cclms/xg-system/" : "/";
 
   return {
-    base: "/",
+    base,
     plugins: [react()],
+    build: {
+      chunkSizeWarningLimit: 900,
+    },
     server: {
       proxy: {
         "/api": {
-          target: BACKEND,
+          target: backend,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",

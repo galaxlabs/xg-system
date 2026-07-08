@@ -153,6 +153,59 @@ export function fmtPct(n: number, d: number): string {
   return `${((n / d) * 100).toFixed(1)}%`;
 }
 
+export type DoctypeAnalyticsSpec = {
+  doctype: string;
+  module: string;
+  label?: string;
+  fields?: string[];
+  dateField?: string;
+};
+
+export type DoctypeAnalyticsRow = {
+  name: string;
+  modified?: string;
+  owner?: string;
+  [key: string]: unknown;
+};
+
+export type DoctypeAnalyticsResult = DoctypeAnalyticsSpec & {
+  count: number | null;
+  recent: DoctypeAnalyticsRow[];
+  error?: string;
+};
+
+export async function fetchDoctypeAnalytics(
+  specs: DoctypeAnalyticsSpec[],
+  limit = 6
+): Promise<DoctypeAnalyticsResult[]> {
+  const results = await Promise.all(
+    specs.map(async (spec) => {
+      try {
+        const count = await callFrappe<number>("frappe.client.get_count", {
+          doctype: spec.doctype,
+        });
+        const fields = JSON.stringify(["name", "modified", "owner", ...(spec.fields ?? [])]);
+        const recent = await callFrappe<DoctypeAnalyticsRow[]>("frappe.client.get_list", {
+          doctype: spec.doctype,
+          fields,
+          limit_page_length: limit,
+          order_by: `${spec.dateField ?? "modified"} desc`,
+        });
+        return { ...spec, count, recent };
+      } catch (error) {
+        return {
+          ...spec,
+          count: null,
+          recent: [],
+          error: String((error as Error).message ?? error),
+        };
+      }
+    })
+  );
+
+  return results;
+}
+
 // ── ATM Leads CRUD ────────────────────────────────────────────────────────
 const ATM_FIELDS = JSON.stringify([
   "name","business_name","owner_name","company","executive_name","branch",
