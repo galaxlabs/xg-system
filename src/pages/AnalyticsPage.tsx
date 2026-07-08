@@ -120,7 +120,7 @@ export default function AnalyticsPage() {
             {trendQuery.isLoading ? <LoadingBlock /> : !trend ? <EmptyBlock /> : (
               <ColumnChart
                 categories={trend.categories}
-                series={trend.series.filter((s) => ["approved","signed","installed"].includes(s.key)).slice(0, 3)}
+                series={trend.series.filter((s) => ["Approved","Signed","Installed"].includes(s.name)).slice(0, 3)}
                 height={280}
               />
             )}
