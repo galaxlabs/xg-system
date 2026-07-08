@@ -1,12 +1,17 @@
 {
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
   "functions": {
-    "api/method/[...path].js": {
+    "api/proxy.js": {
       "runtime": "@vercel/node@3",
       "maxDuration": 10
     }
   },
   "rewrites": [
-    { "source": "/api/method/:path*", "destination": "/api/method/[...path].js" },
+    { "source": "/api/method/:method", "destination": "/api/proxy.js?method=:method" },
+    { "source": "/api/method/:method/:rest*", "destination": "/api/proxy.js?method=:method&rest=:rest" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
