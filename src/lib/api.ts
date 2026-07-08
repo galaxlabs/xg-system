@@ -285,6 +285,14 @@ export const countATMLeads = (p: { status?: string; company?: string } = {}) => 
   });
 };
 
+export const fetchStateCounts = (p: {
+  company?: string; branch?: string; state_code?: string;
+  executive?: string; is_duplicate?: 0 | 1;
+  ai_score_min?: number; ai_score_max?: number;
+  date_field?: string; from_date?: string; to_date?: string;
+  search?: string;
+}) => callFrappe<Record<string, number>>("cclms.api.lead_stats.get_state_counts", p as Record<string, unknown>);
+
 // ── Projects ──────────────────────────────────────────────────────────────
 const PROJECT_FIELDS = JSON.stringify([
   "name","project_name","status","priority","percent_complete",

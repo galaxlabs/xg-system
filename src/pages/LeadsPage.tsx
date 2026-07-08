@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import {
   fetchATMLeads, fetchATMLeadFull, createATMLead, updateATMLead, deleteATMLead,
   applyWorkflowAction, checkLocationConflict, getCompanyAvailability,
-  fetchOperatorCompanies, thisMonthRange,
+  fetchOperatorCompanies, fetchStateCounts, thisMonthRange,
   type DedupConflict, type CompanyAvailability, type StateHistoryRow,
 } from "../lib/api";
 import {
@@ -141,6 +141,74 @@ const TRANSITIONS: Record<string, { action: string; to: string; role: string }[]
     { action: "Reject",         to: "Rejected",            role: "Data Executive" },
   ],
 };
+
+// ── Mini pipeline for table rows ─────────────────────────────────────────
+const STATE_FLOW: { key: string; label: string; color: string }[] = [
+  { key: "Pending",                       label: "Pend",   color: "#f59e0b" },
+  { key: "Approved",                      label: "Appr",   color: "#86efac" },
+  { key: "Requested for Agreement Sent",  label: "Req",    color: "#a78bfa" },
+  { key: "Agreement Sent",                label: "Sent",   color: "#0ea5e9" },
+  { key: "Pending Sign",                  label: "P-Sig",  color: "#f59e0b" },
+  { key: "Signed",                        label: "Sign",   color: "#16a34a" },
+  { key: "Installed",                     label: "Inst",   color: "#2563eb" },
+  { key: "Converted",                     label: "Conv",   color: "#2563eb" },
+];
+const TERMINAL_STATES = new Set(["Rejected", "Cancelled", "Not Qualified", "Signed Rejected", "Disputed"]);
+
+function StateFlowRow({ state }: { state: string }) {
+  if (!state) return <span className="text-xs text-muted">—</span>;
+
+  const idx = STATE_FLOW.findIndex((s) => s.key === state);
+  const isTerminal = TERMINAL_STATES.has(state);
+
+  if (isTerminal) {
+    const c = STATE_COLOR[state] ?? "#6b7280";
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+        style={{ background: `${c}22`, color: c }}>
+        {state}
+      </span>
+    );
+  }
+
+  if (idx < 0) {
+    const c = STATE_COLOR[state] ?? "#6b7280";
+    return <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+      style={{ background: `${c}22`, color: c }}>{state}</span>;
+  }
+
+  return (
+    <div className="flex items-center" style={{ gap: 0 }}>
+      {STATE_FLOW.map((stage, i) => {
+        const isCompleted = i < idx;
+        const isCurrent = i === idx;
+        const bg = isCurrent ? stage.color : isCompleted ? stage.color : "#e5e7eb";
+        const show = isCurrent || isCompleted;
+        if (!show && i > idx + 1) return null;
+        return (
+          <div key={stage.key} className="flex items-center" style={{ gap: 0 }}>
+            <span className="inline-flex items-center justify-center text-white text-[10px] font-bold leading-none"
+              style={{
+                minWidth: isCurrent ? 22 : 18,
+                height: isCurrent ? 22 : 18,
+                borderRadius: isCurrent ? 6 : 11,
+                background: bg,
+                opacity: isCurrent ? 1 : 0.7,
+                boxShadow: isCurrent ? `0 0 0 2px ${stage.color}44` : "none",
+                transition: "all .15s",
+                padding: "0 3px",
+              }}>
+              {isCurrent ? stage.label : "✓"}
+            </span>
+            {i < STATE_FLOW.length - 1 && show && idx > i && (
+              <div style={{ width: 10, height: 2, background: STATE_FLOW[i + 1]?.color ?? "#e5e7eb", opacity: 0.5, flexShrink: 0 }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Helper: get current display state ────────────────────────────────────
 const getState = (r: ATMLeadRow): string => r.workflow_state ?? r.status ?? "Draft";
@@ -866,6 +934,26 @@ export default function LeadsPage() {
     queryFn:  () => fetchATMLeads(qParams),
   });
 
+  // Fetch total state counts for entire filtered dataset (not just page)
+  const stateCountsQuery = useQuery({
+    queryKey: ["atm_state_counts", qParams],
+    queryFn: () => fetchStateCounts({
+      company: filters.company || undefined,
+      branch: filters.branch || undefined,
+      state_code: filters.stateCode || undefined,
+      executive: filters.executive || undefined,
+      is_duplicate: filters.isDuplicate !== "" ? Number(filters.isDuplicate) as 0|1 : undefined,
+      ai_score_min: filters.aiMin ? Number(filters.aiMin) : undefined,
+      ai_score_max: filters.aiMax ? Number(filters.aiMax) : undefined,
+      date_field: filters.dateField,
+      from_date: filters.fromDate || undefined,
+      to_date: filters.toDate || undefined,
+      search: filters.search || undefined,
+    }),
+    staleTime: 30_000,
+  });
+  const totalStateCounts = stateCountsQuery.data ?? {};
+
   const stateCounts = leads.reduce<Record<string,number>>((acc,l) => {
     const s = getState(l); acc[s] = (acc[s]??0) + 1; return acc;
   }, {});
@@ -908,14 +996,20 @@ export default function LeadsPage() {
     { key: "callstack", label: "Call Stack",    count: (stateCounts["Call Back"]??0)+(stateCounts["Called"]??0)+(stateCounts["Interested"]??0)+(stateCounts["Not Interested"]??0) },
   ];
 
-  // Workflow funnel stats (main pipeline only)
+  // Workflow funnel stats (entire filtered dataset, excludes Call Back)
+  const EXCLUDE_STATES = new Set(["Call Back", "Called", "Interested", "Not Interested", "Hide"]);
+  const totalLeads = Object.entries(totalStateCounts)
+    .filter(([s]) => !EXCLUDE_STATES.has(s))
+    .reduce((sum, [, c]) => sum + c, 0);
+
   const FUNNEL_STATS = [
-    { label: "Total",      value: leads.length,                                   color: "#6366f1" },
-    { label: "Pending",    value: stateCounts["Pending"]    ?? 0,                 color: "#f59e0b" },
-    { label: "Approved",   value: stateCounts["Approved"]   ?? 0,                 color: "#16a34a" },
-    { label: "Signed",     value: stateCounts["Signed"]     ?? 0,                 color: "#16a34a" },
-    { label: "Installed",  value: (stateCounts["Installed"]??0)+(stateCounts["Converted"]??0), color: "#2563eb" },
-    { label: "Rejected",   value: (stateCounts["Rejected"]??0)+(stateCounts["Not Qualified"]??0)+(stateCounts["Signed Rejected"]??0), color: "#ef4444" },
+    { label: "Total",      value: totalLeads,                                     color: "#6366f1" },
+    { label: "Pending",    value: totalStateCounts["Pending"]    ?? 0,             color: "#f59e0b" },
+    { label: "Approved",   value: totalStateCounts["Approved"]   ?? 0,             color: "#16a34a" },
+    { label: "Agmt Sent",  value: (totalStateCounts["Agreement Sent"]??0)+(totalStateCounts["Requested for Agreement Sent"]??0)+(totalStateCounts["Pending Sign"]??0), color: "#0ea5e9" },
+    { label: "Signed",     value: totalStateCounts["Signed"]     ?? 0,             color: "#16a34a" },
+    { label: "Installed",  value: (totalStateCounts["Installed"]??0)+(totalStateCounts["Converted"]??0), color: "#2563eb" },
+    { label: "Rejected",   value: (totalStateCounts["Rejected"]??0)+(totalStateCounts["Not Qualified"]??0)+(totalStateCounts["Signed Rejected"]??0)+(totalStateCounts["Cancelled"]??0), color: "#ef4444" },
   ];
 
   return (
@@ -934,11 +1028,12 @@ export default function LeadsPage() {
         {FUNNEL_STATS.map(s => <StatCard key={s.label} label={s.label} value={s.value} color={s.color} />)}
       </div>
 
-      {/* State distribution pills (click to filter) */}
+      {/* State distribution pills (click to filter) — excludes Call Back pipeline */}
       <div className="flex flex-wrap gap-1.5">
-        {WF_STATES.map(s => {
-          const count = stateCounts[s] ?? 0;
-          if (!count) return null;
+        {Object.entries(totalStateCounts)
+          .filter(([s]) => !EXCLUDE_STATES.has(s))
+          .sort(([a], [b]) => WF_STATES.indexOf(a as WFState) - WF_STATES.indexOf(b as WFState))
+          .map(([s, count]) => {
           const c = STATE_COLOR[s] ?? "#6b7280";
           const active = filters.status === s;
           return (
@@ -971,7 +1066,7 @@ export default function LeadsPage() {
                 { key: "business_name", label: "Business",
                   render: r => <button className="text-left font-semibold text-primary hover:underline" onClick={() => setViewLeadName(r.name)}>{r.business_name ?? "—"}</button> },
                 { key: "workflow_state", label: "State",
-                  render: r => <StatusBadge status={getState(r)} /> },
+                  render: r => <StateFlowRow state={getState(r)} /> },
                 { key: "owner_name",    label: "Owner" },
                 { key: "executive_name",label: "Executive" },
                 { key: "company",       label: "Company" },
