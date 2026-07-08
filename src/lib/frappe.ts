@@ -10,6 +10,33 @@ export function resolveFrappeBaseUrl(): string {
   return "";
 }
 
+
+export async function loginFrappe(usr: string, pwd: string): Promise<void> {
+  const baseUrl = resolveFrappeBaseUrl();
+  const url = baseUrl
+    ? new URL("/api/method/login", baseUrl).toString()
+    : "/api/method/login";
+
+  const body = new URLSearchParams();
+  body.set("usr", usr);
+  body.set("pwd", pwd);
+
+  const res = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      Accept: "application/json",
+    },
+    body: body.toString(),
+  });
+
+  const json = (await res.json().catch(() => ({}))) as { message?: string; exc?: string; _server_messages?: string };
+  if (!res.ok || json.exc || json.message === "Logged In" === false) {
+    throw new Error(json.exc || json._server_messages || "Login failed. Check the username and password.");
+  }
+}
+
 export async function callFrappe<T = unknown>(
   method: string,
   args?: Record<string, unknown>
