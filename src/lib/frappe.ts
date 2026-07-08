@@ -55,6 +55,7 @@ export async function callFrappe<T = unknown>(
   const body = new URLSearchParams();
   if (args) {
     for (const [key, value] of Object.entries(args)) {
+      if (value == null || value === "") continue;
       body.set(key, typeof value === "string" ? value : JSON.stringify(value));
     }
   }

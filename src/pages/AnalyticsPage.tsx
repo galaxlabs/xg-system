@@ -1,151 +1,230 @@
-import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, BarChart3, Database, RefreshCw, Search } from "lucide-react";
-
-import { fetchDoctypeAnalytics, type DoctypeAnalyticsSpec } from "../lib/api";
-import { Badge, Card, CardHeader, DataTable, LoadingBlock, StatCard } from "../components/ui/index";
-
-const DOCTYPE_SPECS: DoctypeAnalyticsSpec[] = [
-  { module: "CCLMS", doctype: "ATM Leads", label: "ATM Leads", fields: ["workflow_state", "company", "business_name"], dateField: "modified" },
-  { module: "CCLMS", doctype: "Operator Deal", label: "Operator Deals", fields: ["status", "operator_company", "location"], dateField: "modified" },
-  { module: "CCLMS", doctype: "Signs", label: "Signs", fields: ["company", "branch", "sign_date"], dateField: "modified" },
-  { module: "CCLMS", doctype: "Sales Agent", label: "Sales Agents", fields: ["agent_name", "user"], dateField: "modified" },
-  { module: "CRM", doctype: "Lead", label: "CRM Leads", fields: ["lead_name", "status", "company_name"], dateField: "modified" },
-  { module: "CRM", doctype: "Opportunity", label: "Opportunities", fields: ["opportunity_from", "status", "party_name"], dateField: "modified" },
-  { module: "CRM", doctype: "Customer", label: "Customers", fields: ["customer_name", "customer_group", "territory"], dateField: "modified" },
-  { module: "Projects", doctype: "Project", label: "Projects", fields: ["project_name", "status", "percent_complete"], dateField: "modified" },
-  { module: "Projects", doctype: "Task", label: "Tasks", fields: ["subject", "status", "project"], dateField: "modified" },
-  { module: "Accounting", doctype: "Sales Invoice", label: "Sales Invoices", fields: ["customer", "grand_total", "status"], dateField: "modified" },
-  { module: "Accounting", doctype: "GL Entry", label: "GL Entries", fields: ["account", "debit", "credit"], dateField: "modified" },
-  { module: "Accounting", doctype: "Payment Entry", label: "Payment Entries", fields: ["party", "paid_amount", "payment_type"], dateField: "modified" },
-  { module: "HR", doctype: "Employee", label: "Employees", fields: ["employee_name", "status", "department"], dateField: "modified" },
-  { module: "HR", doctype: "Attendance", label: "Attendance", fields: ["employee", "status", "attendance_date"], dateField: "modified" },
-  { module: "HR", doctype: "Salary Slip", label: "Salary Slips", fields: ["employee", "net_pay", "status"], dateField: "modified" },
-  { module: "HR", doctype: "Employee Activity Log", label: "Activity Logs", fields: ["employee", "date", "total_active_minutes"], dateField: "modified" },
-  { module: "HR", doctype: "Call Daily Summary", label: "Call Summary", fields: ["employee", "date", "total_calls"], dateField: "modified" },
-];
-
-function valuePreview(row: Record<string, unknown>) {
-  const entries = Object.entries(row).filter(([key, value]) => !["name", "owner", "modified"].includes(key) && value != null && value !== "");
-  if (!entries.length) return "No fields returned";
-  return entries.slice(0, 3).map(([key, value]) => `${key.replace(/_/g, " ")}: ${String(value)}`).join(" | ");
-}
+import { useState } from "react";
+import {
+  fetchOverview, fetchCompanyBreakdown, fetchEmployees,
+  fetchProjects, fetchSalarySlips, fetchATMLeads,
+  fetchStateCounts, thisMonthRange,
+  fetchMultiTrend,
+} from "../lib/api";
+import {
+  Card, CardHeader, StatCard, LoadingBlock, EmptyBlock, DataTable,
+  DateInput, FilterRow,
+} from "../components/ui/index";
+import { ColumnChart, DonutChart } from "../components/charts/index";
+import { BarChart3, TrendingUp, Users, Building2, BriefcaseBusiness, DollarSign, Phone } from "lucide-react";
 
 export default function AnalyticsPage() {
-  const [module, setModule] = useState("All");
-  const [search, setSearch] = useState("");
-  const { data = [], isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["doctype-analytics"],
-    queryFn: () => fetchDoctypeAnalytics(DOCTYPE_SPECS, 5),
+  const { from, to } = thisMonthRange();
+  const [fromDate, setFrom] = useState(from);
+  const [toDate, setTo] = useState(to);
+
+  const overviewQuery = useQuery({
+    queryKey: ["overview", fromDate, toDate],
+    queryFn: () => fetchOverview({ start_date: fromDate, end_date: toDate }),
+  });
+  const companyQuery = useQuery({
+    queryKey: ["company-breakdown", fromDate, toDate],
+    queryFn: () => fetchCompanyBreakdown({ start_date: fromDate, end_date: toDate }),
+  });
+  const empQuery = useQuery({
+    queryKey: ["employees-all"],
+    queryFn: () => fetchEmployees({}),
+  });
+  const projQuery = useQuery({
+    queryKey: ["projects-all"],
+    queryFn: () => fetchProjects({}),
+  });
+  const salaryQuery = useQuery({
+    queryKey: ["salary-slips", fromDate, toDate],
+    queryFn: () => fetchSalarySlips({ start_date: fromDate, end_date: toDate }),
+  });
+  const trendQuery = useQuery({
+    queryKey: ["multi-trend"],
+    queryFn: () => fetchMultiTrend({ months_back: 12 }),
+  });
+  const stateCountsQuery = useQuery({
+    queryKey: ["lead-states"],
+    queryFn: () => fetchStateCounts({}),
   });
 
-  const modules = useMemo(() => ["All", ...Array.from(new Set(DOCTYPE_SPECS.map((item) => item.module)))], []);
-  const filtered = data.filter((item) => {
-    const q = search.trim().toLowerCase();
-    const matchesModule = module === "All" || item.module === module;
-    const matchesSearch = !q || `${item.label ?? item.doctype} ${item.doctype} ${item.module}`.toLowerCase().includes(q);
-    return matchesModule && matchesSearch;
-  });
-  const readable = data.filter((item) => item.count !== null);
-  const totalRecords = readable.reduce((sum, item) => sum + Number(item.count ?? 0), 0);
-  const blocked = data.length - readable.length;
-  const topDoctypes = [...readable].sort((a, b) => Number(b.count ?? 0) - Number(a.count ?? 0)).slice(0, 6);
+  const overview = overviewQuery.data;
+  const companies = companyQuery.data ?? [];
+  const employees = empQuery.data ?? [];
+  const projects = projQuery.data ?? [];
+  const salaries = salaryQuery.data ?? [];
+  const trend = trendQuery.data;
+  const stateCounts = stateCountsQuery.data ?? {};
+
+  const activeEmployees = Array.isArray(employees)
+    ? employees.filter((e: Record<string, unknown>) => e.status === "Active").length
+    : 0;
+  const totalProjects = Array.isArray(projects) ? projects.length : 0;
+  const openProjects = Array.isArray(projects)
+    ? projects.filter((p: Record<string, unknown>) => p.status === "Open").length
+    : 0;
+  const totalSalary = Array.isArray(salaries)
+    ? salaries.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.net_pay) || 0), 0)
+    : 0;
+
+  const leadStates = Object.entries(stateCounts).sort((a, b) => b[1] - a[1]);
+  const totalLeads = leadStates.reduce((s, [, c]) => s + c, 0);
+  const stageCounts = ["Pending","Approved","Agreement Sent","Pending Sign","Signed","Installed","Converted","Rejected","Cancelled"]
+    .map((s) => ({ stage: s, count: stateCounts[s] ?? 0 }))
+    .filter((s) => s.count > 0);
+
+  const piplineDonut = stageCounts.filter((s) => !["Rejected","Cancelled"].includes(s.stage));
+  const rejectedCount = stageCounts.filter((s) => ["Rejected","Cancelled"].includes(s.stage)).reduce((sum, s) => sum + s.count, 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--gc-border)] bg-[var(--gc-card)] px-3 py-1 text-xs font-semibold text-[var(--gc-muted)]">
-            <Database className="h-3.5 w-3.5" /> Live Frappe DocTypes
+            <BarChart3 className="h-3.5 w-3.5" /> Business Analytics
           </div>
-          <h1 className="mt-3 text-2xl font-semibold tracking-normal text-[var(--gc-text)]">Analytics coverage</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--gc-muted)]">Counts and recent rows come from the same Frappe permission layer as CCLMS and ERPNext.</p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-normal text-[var(--gc-text)]">Analytics</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--gc-muted)]">Real-time KPIs across all business modules</p>
         </div>
-        <button className="gc-btn-outline self-start lg:self-auto" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard label="Readable DocTypes" value={readable.length} sub={`${DOCTYPE_SPECS.length} configured`} color="#0f766e" />
-        <StatCard label="Visible Records" value={totalRecords.toLocaleString()} sub="Permission-scoped total" color="#84cc16" />
-        <StatCard label="Needs Permission" value={blocked} sub="Hidden by role or missing DocType" color="#f59e0b" />
+      <FilterRow onRefresh={() => { overviewQuery.refetch(); companyQuery.refetch(); empQuery.refetch(); projQuery.refetch(); salaryQuery.refetch(); trendQuery.refetch(); stateCountsQuery.refetch(); }}>
+        <DateInput label="From" value={fromDate} onChange={setFrom} />
+        <DateInput label="To" value={toDate} onChange={setTo} />
+      </FilterRow>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard label="Total Leads" value={totalLeads} color="#6366f1" icon={<BriefcaseBusiness className="h-4 w-4" />} />
+        <StatCard label="Active Employees" value={activeEmployees} color="#10b981" icon={<Users className="h-4 w-4" />} />
+        <StatCard label="Open Projects" value={openProjects} color="#f59e0b" icon={<Building2 className="h-4 w-4" />} />
+        <StatCard label="Payroll (MTD)" value={`$${Math.round(totalSalary).toLocaleString()}`} color="#16a34a" icon={<DollarSign className="h-4 w-4" />} />
       </div>
 
+      {/* Pipeline + Trends row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader title="Pipeline Workflow" subtitle={`${totalLeads} total leads across stages`} />
+          <div className="px-4 pb-4">
+            {stateCountsQuery.isLoading ? <LoadingBlock /> : piplineDonut.length === 0 ? <EmptyBlock /> : (
+              <DonutChart
+                title="Pipeline Stage"
+                data={piplineDonut.map((s) => ({ name: s.stage, y: s.count }))}
+                height={280}
+              />
+            )}
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Monthly Trend" subtitle="Approved, Signed, Installed (12 months)" />
+          <div className="px-4 pb-4">
+            {trendQuery.isLoading ? <LoadingBlock /> : !trend ? <EmptyBlock /> : (
+              <ColumnChart
+                categories={trend.categories}
+                series={trend.series.filter((s) => ["approved","signed","installed"].includes(s.key)).slice(0, 3)}
+                height={280}
+              />
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Operator breakdown */}
       <Card>
-        <CardHeader
-          title="ERP module coverage"
-          subtitle="Search the modules this frontend can query"
-          action={
-            <div className="flex flex-wrap gap-2">
-              {modules.map((name) => (
-                <button key={name} className={`gc-chip ${module === name ? "active" : ""}`} onClick={() => setModule(name)}>{name}</button>
-              ))}
-            </div>
-          }
-        />
-        <div className="px-4 pb-4">
-          <label className="mb-4 flex h-10 max-w-md items-center gap-2 rounded-[8px] border border-[var(--gc-border)] bg-[var(--gc-surface)] px-3 text-[var(--gc-muted)]">
-            <Search className="h-4 w-4" />
-            <input className="min-w-0 flex-1 bg-transparent text-sm text-[var(--gc-text)] outline-none placeholder:text-[var(--gc-muted)]" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search DocTypes" />
-          </label>
-          {isLoading ? <LoadingBlock /> : (
+        <CardHeader title="Operator Company Breakdown" subtitle={`${companies.length} companies`} />
+        <div className="gc-card-body">
+          {companyQuery.isLoading ? <LoadingBlock /> : companies.length === 0 ? <EmptyBlock /> : (
             <DataTable
-              rows={filtered}
-              keyField="doctype"
               cols={[
-                { key: "label", label: "DocType", render: (row) => <div><div className="font-semibold">{row.label ?? row.doctype}</div><div className="text-xs text-muted">{row.doctype}</div></div> },
-                { key: "module", label: "Module", width: "120px", render: (row) => <Badge variant={row.module === "CCLMS" ? "green" : row.module === "Accounting" ? "blue" : "gray"}>{row.module}</Badge> },
-                { key: "count", label: "Records", align: "right", width: "110px", render: (row) => row.count === null ? <span className="text-xs text-amber-600">No access</span> : <span className="font-semibold">{Number(row.count).toLocaleString()}</span> },
-                { key: "error", label: "Status", render: (row) => row.error ? <span className="inline-flex items-center gap-1 text-xs text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Permission or schema unavailable</span> : <span className="text-xs text-emerald-600">Readable</span> },
+                { key: "operator_company", label: "Company" },
+                { key: "submitted", label: "Submitted", align: "right" },
+                { key: "approved", label: "Approved", align: "right" },
+                { key: "agreement_sent", label: "Agmt Sent", align: "right" },
+                { key: "signed", label: "Signed", align: "right" },
+                { key: "installed", label: "Installed", align: "right" },
+                { key: "rejected", label: "Rejected", align: "right" },
+                { key: "cancelled", label: "Cancelled", align: "right" },
+                { key: "total_deals", label: "Total", align: "right" },
               ]}
+              rows={companies}
+              keyField="operator_company"
             />
           )}
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      {/* Lead state distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader title="Largest readable DocTypes" subtitle="Top record counts from this session" />
-          <div className="space-y-3 px-4 pb-4">
-            {topDoctypes.map((item) => {
-              const max = Math.max(...topDoctypes.map((row) => Number(row.count ?? 0)), 1);
-              const pct = Math.round((Number(item.count ?? 0) / max) * 100);
-              return (
-                <div key={item.doctype}>
-                  <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-                    <span className="font-medium">{item.label ?? item.doctype}</span>
-                    <span className="text-xs text-muted">{Number(item.count ?? 0).toLocaleString()}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-[var(--gc-border)]"><div className="h-full rounded-full bg-[var(--gc-primary-strong)]" style={{ width: `${pct}%` }} /></div>
-                </div>
-              );
-            })}
+          <CardHeader title="Lead Stage Distribution" subtitle="All workflow states" />
+          <div className="gc-card-body">
+            {stateCountsQuery.isLoading ? <LoadingBlock /> : leadStates.length === 0 ? <EmptyBlock /> : (
+              <div className="space-y-2">
+                {leadStates.map(([state, count]) => {
+                  const pct = totalLeads > 0 ? Math.round((count / totalLeads) * 100) : 0;
+                  const colorMap: Record<string, string> = {
+                    "Pending": "#f59e0b", "Approved": "#86efac", "Agreement Sent": "#0ea5e9",
+                    "Pending Sign": "#f59e0b", "Signed": "#16a34a", "Installed": "#2563eb",
+                    "Converted": "#2563eb", "Rejected": "#ef4444", "Cancelled": "#6b7280",
+                    "Draft": "#6b7280", "Re Approval": "#f97316", "Signed Rejected": "#ef4444",
+                    "Not Qualified": "#ef4444", "Needs Reanalysis": "#f97316",
+                  };
+                  const c = colorMap[state] ?? "#6b7280";
+                  return (
+                    <div key={state} className="flex items-center gap-3">
+                      <span className="w-32 text-xs text-[var(--gc-text)] truncate">{state}</span>
+                      <div className="flex-1 h-5 rounded-full overflow-hidden" style={{ background: `${c}22` }}>
+                        <div className="h-full rounded-full flex items-center justify-end px-2 text-[10px] font-bold text-white"
+                          style={{ width: `${pct}%`, background: c, minWidth: pct > 0 ? "fit-content" : undefined }}>
+                          {pct > 8 ? `${pct}%` : ""}
+                        </div>
+                      </div>
+                      <span className="w-16 text-xs font-semibold text-right text-[var(--gc-text)]">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </Card>
-
         <Card>
-          <CardHeader title="Recent rows" subtitle="Latest records returned by Frappe" />
-          <div className="max-h-[520px] space-y-3 overflow-auto px-4 pb-4">
-            {filtered.filter((item) => item.recent.length).slice(0, 8).map((item) => (
-              <div key={item.doctype} className="rounded-[8px] border border-[var(--gc-border)] bg-[var(--gc-surface)] p-3">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="font-semibold">{item.label ?? item.doctype}</div>
-                  <Badge variant="gray">{item.recent.length} latest</Badge>
-                </div>
-                <div className="space-y-2">
-                  {item.recent.map((row) => (
-                    <div key={`${item.doctype}-${row.name}`} className="rounded-[6px] bg-[var(--gc-card)] px-3 py-2 text-xs">
-                      <div className="font-mono font-semibold text-[var(--gc-text)]">{row.name}</div>
-                      <div className="mt-1 truncate text-[var(--gc-muted)]">{valuePreview(row)}</div>
+          <CardHeader title="Monthly Overview" subtitle="Aggregated counts" />
+          <div className="gc-card-body space-y-4">
+            {overviewQuery.isLoading ? <LoadingBlock /> : !overview ? <EmptyBlock /> : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {Object.entries(overview.counts).filter(([k]) => !["net_signed"].includes(k)).map(([key, value]) => (
+                    <div key={key} className="rounded-[8px] border border-[var(--gc-border)] bg-[var(--gc-surface)] p-3 text-center">
+                      <div className="text-lg font-bold text-[var(--gc-text)]">{value as number}</div>
+                      <div className="text-[10px] text-[var(--gc-muted)] uppercase">{key.replace(/_/g, " ")}</div>
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
+                <div className="rounded-[8px] bg-emerald-50 border border-emerald-200 p-3 text-center">
+                  <div className="text-xl font-bold text-emerald-700">{overview.counts.net_signed}</div>
+                  <div className="text-xs text-emerald-600 font-semibold uppercase">Net Signed</div>
+                </div>
+              </>
+            )}
           </div>
         </Card>
       </div>
+
+      {/* Status snapshot */}
+      <Card>
+        <CardHeader title="Status Snapshot" subtitle="Current state of all deals" />
+        <div className="gc-card-body">
+          {overviewQuery.isLoading ? <LoadingBlock /> : !overview?.status_snapshot ? <EmptyBlock /> : (
+            <div className="flex flex-wrap gap-3">
+              {overview.status_snapshot.map((s: Record<string, unknown>) => (
+                <div key={String(s.label)} className="rounded-[8px] border border-[var(--gc-border)] bg-[var(--gc-surface)] px-4 py-3 text-center min-w-[100px]">
+                  <div className="text-lg font-bold text-[var(--gc-text)]">{String(s.value)}</div>
+                  <div className="text-xs text-[var(--gc-muted)]">{String(s.label)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
