@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://crm.galaxylabs.online/api/:path*"
+      "destination": "https://btm.digihoopoe.com/api/:path*"
     },
     {
       "source": "/((?!api).*)",

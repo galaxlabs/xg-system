@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const backend = env.VITE_FRAPPE_BASE_URL || "https://btm.digihoopoe.com";
-  const base = mode === "production" ? "/assets/cclms/xg-system/" : "/";
+  const base = env.VITE_ASSET_BASE || "/";
 
   return {
     base,
