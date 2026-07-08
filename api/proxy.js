@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   if (req.headers.cookie) headers.cookie = req.headers.cookie;
   if (req.headers["x-frappe-csrf-token"]) headers["x-frappe-csrf-token"] = req.headers["x-frappe-csrf-token"];
 
-  if (!headers.cookie && !headers.authorization && API_KEY && API_SECRET) {
+  if (API_KEY && API_SECRET) {
     headers.authorization = `token ${API_KEY}:${API_SECRET}`;
   }
 
